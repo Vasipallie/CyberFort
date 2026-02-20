@@ -3,21 +3,159 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --honeydew: #e5f4e3;
+  --cool-sky: #5da9e9;
+  --french-blue: #003f91;
+  --velvet-purple: #6d326d;
+  --white: #ffffff;
+  --background: #e5f4e3;
+  --foreground: #1a1a2e;
+  --font-scale: 1;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: calc(18px * var(--font-scale));
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.high-contrast {
+  --background: #000000;
+  --foreground: #ffffff;
+  --honeydew: #001a00;
+  --cool-sky: #66ccff;
+  --french-blue: #4488ff;
+  --velvet-purple: #cc66cc;
+}
+
+body.dyslexia-font {
+  font-family: "OpenDyslexic", "Comic Sans MS", sans-serif !important;
+}
+
+body.simplified-mode {
+  --font-scale: 1.35;
+}
+
+.hero-gradient {
+  background: linear-gradient(135deg, var(--honeydew) 0%, #c8e6f5 50%, var(--honeydew) 100%);
+}
+
+@keyframes gentleGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animated-gradient {
+  background: linear-gradient(135deg, var(--honeydew), #d0eafc, var(--honeydew), #d5f0d0);
+  background-size: 400% 400%;
+  animation: gentleGradient 12s ease infinite;
+}
+
+*:focus-visible {
+  outline: 3px solid var(--cool-sky);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center px-8 py-4 text-lg font-semibold
+         rounded-xl transition-all duration-200 min-h-[48px]
+         bg-cool-sky text-white hover:bg-french-blue
+         focus-visible:ring-4 focus-visible:ring-cool-sky/50
+         shadow-md hover:shadow-lg active:scale-[0.98];
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center px-8 py-4 text-lg font-semibold
+         rounded-xl transition-all duration-200 min-h-[48px]
+         bg-white text-french-blue border-2 border-french-blue
+         hover:bg-french-blue hover:text-white
+         focus-visible:ring-4 focus-visible:ring-french-blue/50
+         shadow-md hover:shadow-lg active:scale-[0.98];
+}
+
+.btn-accent {
+  @apply inline-flex items-center justify-center px-8 py-4 text-lg font-semibold
+         rounded-xl transition-all duration-200 min-h-[48px]
+         bg-velvet-purple text-white hover:bg-velvet-purple/90
+         focus-visible:ring-4 focus-visible:ring-velvet-purple/50
+         shadow-md hover:shadow-lg active:scale-[0.98];
+}
+
+.card {
+  @apply bg-white rounded-2xl shadow-lg p-8 transition-all duration-200
+         hover:shadow-xl border border-gray-100;
+}
+
+input[type="range"] {
+  @apply w-full h-3 rounded-full appearance-none cursor-pointer;
+  background: linear-gradient(to right, var(--cool-sky), var(--french-blue));
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  @apply appearance-none w-6 h-6 rounded-full bg-french-blue border-2 border-white shadow-md;
+}
+
+.skip-link {
+  @apply absolute -top-full left-4 bg-french-blue text-white px-6 py-3 rounded-b-xl
+         z-50 focus:top-0 transition-all;
+}
+
+@keyframes gentlePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.gentle-pulse {
+  animation: gentlePulse 3s ease-in-out infinite;
+}
+
+@keyframes progressFill {
+  from { width: 0%; }
+}
+
+.progress-animate {
+  animation: progressFill 1s ease-out;
+}
+
+@keyframes pointAnimation {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(5px, 5px); }
+}
+
+.hand-pointer {
+  animation: pointAnimation 1.5s ease-in-out infinite;
+}
+
+.certificate-border {
+  border: 4px solid var(--velvet-purple);
+  background: linear-gradient(135deg, #fff 0%, #f8f0f8 100%);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--honeydew);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--cool-sky);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--french-blue);
 }
 
 @layer utilities {
