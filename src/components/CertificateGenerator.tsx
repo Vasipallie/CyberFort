@@ -63,7 +63,7 @@ export default function CertificateGenerator() {
     return (
         <div className="card mt-8 p-6 text-center">
             <h3 className="text-lg font-bold mb-3">🎓 Generate Certificate</h3>
-            <p className="text-sm text-gray-600 mb-4">Enter the learner's name to create a printable certificate.</p>
+            <p className="text-sm text-gray-600 mb-4">Enter the learner&apos;s name to create a printable certificate.</p>
             <div className="max-w-md mx-auto flex gap-3">
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Learner Full Name"
                     className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 focus:outline-none" />
