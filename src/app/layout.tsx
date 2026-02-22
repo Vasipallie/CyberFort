@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     title: "CyberFort — Safe Digital Training for Seniors",
     description:
         "A risk-free digital training simulator helping seniors practise government portals, online banking, and essential services safely. Build confidence with step-by-step guidance.",
-    keywords: ["seniors", "digital training", "SingPass", "practice", "simulator", "cybersecurity"],
+    keywords: ["seniors", "digital training", "practice", "simulator", "cybersecurity"],
 };
 
 export default function RootLayout({

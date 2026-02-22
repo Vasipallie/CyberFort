@@ -15,8 +15,8 @@ export interface Module {
 export const MODULES: Module[] = [
     {
         id: "gov-login",
-        title: "Government Login (SingPass)",
-        description: "Practise logging into a government portal using SingPass. Learn about usernames, passwords, and two-factor authentication.",
+        title: "Government Login (Practice Portal)",
+        description: "Practise logging into a government-style portal. Learn about usernames, passwords, and two-factor authentication.",
         icon: "🏛️",
         estimatedTime: "10–15 min",
         difficulty: "Beginner",
@@ -37,8 +37,8 @@ export const MODULES: Module[] = [
     },
     {
         id: "pension",
-        title: "Pension / CPF Balance Check",
-        description: "Check your CPF (Central Provident Fund) balances and view recent contribution history.",
+        title: "Pension / Retirement Balance Check",
+        description: "Check your pension and retirement account balances and view recent contribution history.",
         icon: "💰",
         estimatedTime: "8–10 min",
         difficulty: "Beginner",
@@ -48,8 +48,8 @@ export const MODULES: Module[] = [
     },
     {
         id: "banking",
-        title: "Online Banking",
-        description: "Navigate an online banking portal. View your balance, check recent transactions, and practise making a transfer.",
+        title: "Online Banking (Practice)",
+        description: "Navigate an online banking-style portal. View your balance, check recent transactions, and practise making a transfer.",
         icon: "🏦",
         estimatedTime: "12–15 min",
         difficulty: "Intermediate",
@@ -59,8 +59,8 @@ export const MODULES: Module[] = [
     },
     {
         id: "paynow",
-        title: "PayNow Transfer",
-        description: "Practise sending money using PayNow. Select a contact, enter the amount, and confirm the transfer safely.",
+        title: "Instant Transfer (Practice)",
+        description: "Practise sending money using an instant-transfer workflow. Select a contact, enter the amount, and confirm safely.",
         icon: "📱",
         estimatedTime: "8–10 min",
         difficulty: "Intermediate",
@@ -113,33 +113,9 @@ export const HOW_IT_WORKS = [
     },
 ];
 
-export const STATS = [
-    { label: "Seniors Trained", value: "2,400+", icon: "👵" },
-    { label: "Modules Completed", value: "12,800+", icon: "✅" },
-    { label: "Certificates Issued", value: "1,950+", icon: "🏆" },
-    { label: "Avg. Confidence Boost", value: "+67%", icon: "📈" },
-];
-
-export const TESTIMONIALS = [
-    {
-        name: "Margaret Chen",
-        age: 72,
-        quote: "I was so scared to use SingPass. Now I log in by myself every month to check my CPF. My children are so proud!",
-        improvement: "+85% confidence",
-    },
-    {
-        name: "Ahmad Ibrahim",
-        age: 68,
-        quote: "The guided practice helped me understand PayNow. I can transfer money to my grandchildren now without asking for help.",
-        improvement: "+72% confidence",
-    },
-    {
-        name: "Devi Nair",
-        age: 75,
-        quote: "I almost fell for a phishing email, but CyberFort taught me to spot the signs. I feel much safer online now.",
-        improvement: "+90% confidence",
-    },
-];
+// Removed fake statistics and testimonials to keep the site factual.
+export const STATS: { label: string; value: string; icon: string }[] = [];
+export const TESTIMONIALS: { name: string; age?: number; quote: string; improvement?: string }[] = [];
 
 export const SAFETY_FEATURES = [
     {

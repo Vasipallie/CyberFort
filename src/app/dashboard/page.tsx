@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { MODULES } from "@/lib/data";
+import CertificateGenerator from "@/components/CertificateGenerator";
 
 export default function DashboardPage() {
     return (
@@ -62,6 +63,9 @@ export default function DashboardPage() {
                         You can try any module as many times as you like. There are no penalties for mistakes.
                         Every error is a learning opportunity. You&apos;re doing great!
                     </p>
+                </div>
+                <div className="max-w-6xl mx-auto">
+                    <CertificateGenerator />
                 </div>
             </div>
         </div>

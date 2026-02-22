@@ -13,10 +13,12 @@ export interface FakeUser {
     role: "user" | "admin";
 }
 
+// NOTE: Credentials must be kept secret. Do NOT expose real passwords or OTPs in the repo.
+// For local development, populate secrets via a secure server-side method or environment variables.
 export const FAKE_CREDENTIALS: Record<string, FakeUser> = {
     user: {
         username: "margaret.chen",
-        password: "Safe2026!",
+        password: "<REDACTED>",
         fullName: "Margaret Chen Siew Lian",
         nric: "S1234567A",
         phone: "9123 4567",
@@ -27,7 +29,7 @@ export const FAKE_CREDENTIALS: Record<string, FakeUser> = {
     },
     admin: {
         username: "admin.cyberfort",
-        password: "Admin2026!",
+        password: "<REDACTED>",
         fullName: "CyberFort Administrator",
         nric: "S9876543Z",
         phone: "6123 4567",
@@ -110,4 +112,4 @@ export const FAKE_HEALTHCARE = {
 };
 
 // 2FA code (static for practice)
-export const FAKE_2FA_CODE = "482916";
+// 2FA code removed from repo. Use secure server-side values if needed for guided demos.

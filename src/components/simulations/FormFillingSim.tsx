@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { FAKE_CREDENTIALS } from "@/lib/credentials";
 
 interface Props {
     mode: "guided" | "independent";
@@ -26,7 +25,6 @@ export default function FormFillingSim({ mode, onComplete, onError }: Props) {
     const [score, setScore] = useState(0);
     const [errors, setErrors] = useState(0);
     const isGuided = mode === "guided";
-    const user = FAKE_CREDENTIALS.user;
 
     const updateField = (key: string, value: string | boolean) => {
         setFormData((prev) => ({ ...prev, [key]: value }));
@@ -63,9 +61,7 @@ export default function FormFillingSim({ mode, onComplete, onError }: Props) {
 
                     {isGuided && (
                         <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6 text-sm text-blue-800">
-                            📝 <strong>Guided:</strong> Fill in each field using the practice information below:<br />
-                            Name: <code>{user.fullName}</code> | NRIC: <code>{user.nric}</code> | DOB: <code>{user.dob}</code><br />
-                            Phone: <code>{user.phone}</code> | Email: <code>{user.email}</code>
+                            📝 <strong>Guided:</strong> Fill in each field using example practice information (do not enter real personal details).
                         </div>
                     )}
 

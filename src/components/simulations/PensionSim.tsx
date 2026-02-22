@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FAKE_CPF, FAKE_CREDENTIALS, FAKE_2FA_CODE } from "@/lib/credentials";
+import { FAKE_CPF } from "@/lib/credentials";
 
 interface Props {
     mode: "guided" | "independent";
@@ -20,22 +20,21 @@ export default function PensionSim({ mode, onComplete, onError }: Props) {
     const [score, setScore] = useState(0);
     const [errors, setErrors] = useState(0);
     const isGuided = mode === "guided";
-    const user = FAKE_CREDENTIALS.user;
 
     const handleLogin = () => {
-        if (username === user.username && password === user.password) {
+        if (username.trim() && password.trim()) {
             setScore((s) => s + 25);
             setStep("2fa");
             setLoginError("");
         } else {
-            setLoginError("Invalid credentials. Try again.");
+            setLoginError("Please provide a user ID and password.");
             setErrors((e) => e + 1);
             onError();
         }
     };
 
     const handle2FA = () => {
-        if (code2fa === FAKE_2FA_CODE) {
+        if (code2fa.replace(/\D/g, "").length >= 4) {
             setScore((s) => s + 25);
             setStep("overview");
         } else {
@@ -63,9 +62,9 @@ export default function PensionSim({ mode, onComplete, onError }: Props) {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-semibold mb-2">SingPass ID</label>
+                            <label className="block text-sm font-semibold mb-2">User ID</label>
                             <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Enter SingPass ID"
+                                placeholder="Enter user ID"
                                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#00205b] focus:outline-none min-h-[48px]" />
                         </div>
                         <div>
@@ -75,21 +74,13 @@ export default function PensionSim({ mode, onComplete, onError }: Props) {
                                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#00205b] focus:outline-none min-h-[48px]"
                                 onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
                         </div>
-                        {loginError && (
-                            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-3 text-sm text-red-700">{loginError}</div>
-                        )}
+                        {loginError && <div className="bg-red-50 border-2 border-red-200 rounded-xl p-3 text-sm text-red-700">{loginError}</div>}
                         <button onClick={handleLogin}
                             className={`w-full bg-[#00205b] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#001540] transition-all
                 ${isGuided ? "ring-4 ring-blue-400 ring-offset-2" : ""}`}>
                             Log In
                         </button>
                     </div>
-
-                    {isGuided && (
-                        <div className="mt-6 bg-green-50 border-2 border-green-200 rounded-xl p-4 text-sm text-green-800">
-                            💡 <strong>Credentials:</strong> <code>{user.username}</code> / <code>{user.password}</code>
-                        </div>
-                    )}
                 </div>
                 <div className="mt-4 bg-amber-50 border-2 border-amber-200 rounded-xl p-3 text-center">
                     <span className="text-sm font-bold text-amber-800">⚠️ PRACTICE MODE — Not the real CPF portal</span>
@@ -107,7 +98,7 @@ export default function PensionSim({ mode, onComplete, onError }: Props) {
                 </div>
                 <div className="bg-white border-2 border-gray-200 rounded-b-xl p-8 text-center">
                     <div className="text-4xl mb-4">📱</div>
-                    <p className="text-gray-600 mb-6">Enter the 6-digit code sent to ****{user.phone.slice(-4)}</p>
+                    <p className="text-gray-600 mb-6">Enter the 6-digit code sent to your device.</p>
                     <input type="text" value={code2fa} onChange={(e) => setCode2fa(e.target.value.replace(/\D/g, "").slice(0, 6))}
                         placeholder="000000" maxLength={6}
                         className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 text-2xl text-center tracking-[0.5em] font-mono focus:border-[#00205b] focus:outline-none"
@@ -117,11 +108,7 @@ export default function PensionSim({ mode, onComplete, onError }: Props) {
               ${isGuided ? "ring-4 ring-blue-400 ring-offset-2" : ""}`}>
                         Verify
                     </button>
-                    {isGuided && (
-                        <div className="mt-4 bg-green-50 border-2 border-green-200 rounded-xl p-3 text-sm text-green-800">
-                            💡 Code: <code className="text-lg">{FAKE_2FA_CODE}</code>
-                        </div>
-                    )}
+                    {/* Guided hints should not display secret codes in the UI */}
                 </div>
             </div>
         );

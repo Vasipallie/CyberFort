@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { HOW_IT_WORKS, STATS, TESTIMONIALS, SAFETY_FEATURES } from "@/lib/data";
+import { HOW_IT_WORKS, SAFETY_FEATURES } from "@/lib/data";
 import { useState } from "react";
 
 export default function HomePage() {
@@ -31,7 +31,7 @@ export default function HomePage() {
                         <a href="#how-it-works" className="btn-secondary text-xl px-10 py-5">
                             📖 How It Works
                         </a>
-                        <Link href="/volunteer" className="btn-accent text-xl px-10 py-5">
+                        <Link href="/contact" className="btn-accent text-xl px-10 py-5">
                             🤝 For Caregivers
                         </Link>
                         <Link href="/contact" className="btn-secondary text-xl px-10 py-5">
@@ -71,52 +71,7 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* Stats */}
-            <section className="py-16 px-4 bg-french-blue text-white">
-                <div className="max-w-5xl mx-auto">
-                    <h2 className="text-3xl sm:text-4xl font-bold text-center mb-4">
-                        Measuring Real Confidence Growth
-                    </h2>
-                    <p className="text-center text-cool-sky mb-12 text-lg">
-                        Real results from real seniors — building independence every day
-                    </p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        {STATS.map((stat) => (
-                            <div
-                                key={stat.label}
-                                className="text-center p-6 bg-white/10 rounded-2xl backdrop-blur-sm"
-                            >
-                                <div className="text-4xl mb-2">{stat.icon}</div>
-                                <div className="text-3xl sm:text-4xl font-bold mb-1">{stat.value}</div>
-                                <div className="text-cool-sky text-sm font-medium">{stat.label}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Testimonials */}
-            <section className="py-16 px-4 bg-honeydew">
-                <div className="max-w-5xl mx-auto">
-                    <h2 className="text-3xl sm:text-4xl font-bold text-center text-foreground mb-12">
-                        Hear From Our Learners
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {TESTIMONIALS.map((t) => (
-                            <div key={t.name} className="card">
-                                <div className="text-4xl mb-3">💬</div>
-                                <p className="text-gray-700 italic mb-4 text-lg leading-relaxed">
-                                    &ldquo;{t.quote}&rdquo;
-                                </p>
-                                <div className="border-t pt-4">
-                                    <p className="font-bold text-foreground">{t.name}, {t.age}</p>
-                                    <p className="text-green-600 font-semibold text-sm">{t.improvement}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
+            {/* Stats and testimonials removed to keep content factual and uncluttered */}
 
             {/* Safety */}
             <section className="py-16 px-4 bg-white">

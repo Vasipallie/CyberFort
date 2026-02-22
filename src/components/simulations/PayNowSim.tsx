@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { FAKE_CREDENTIALS, FAKE_2FA_CODE } from "@/lib/credentials";
 
 interface Props {
     mode: "guided" | "independent";
@@ -143,7 +142,7 @@ export default function PayNowSim({ mode, onComplete, onError }: Props) {
                     <div className="bg-gray-50 rounded-xl p-4 text-left text-sm space-y-2 mb-6">
                         <div className="flex justify-between">
                             <span className="text-gray-500">From</span>
-                            <span>{FAKE_CREDENTIALS.user.fullName}</span>
+                            <span>You (Learner)</span>
                         </div>
                         <div className="flex justify-between">
                             <span className="text-gray-500">To</span>

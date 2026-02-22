@@ -11,7 +11,6 @@ export default function Navbar() {
         { href: "/dashboard", label: "Practice" },
         { href: "/progress", label: "My Progress" },
         { href: "/scam-training", label: "Scam Training" },
-        { href: "/volunteer", label: "Volunteer" },
         { href: "/admin", label: "Admin" },
         { href: "/contact", label: "Contact" },
     ];
@@ -52,16 +51,6 @@ export default function Navbar() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <Link
-                            href="/"
-                            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl 
-                       font-semibold text-sm sm:text-base transition-colors min-h-[48px]
-                       flex items-center gap-2"
-                            aria-label="Return to homepage (panic button)"
-                        >
-                            🏠 <span className="hidden sm:inline">Go Home</span>
-                        </Link>
-
                         <button
                             className="lg:hidden w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center
                        hover:bg-white/20 transition-colors"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FAKE_BANK, FAKE_CREDENTIALS, FAKE_2FA_CODE } from "@/lib/credentials";
+import { FAKE_BANK } from "@/lib/credentials";
 
 interface Props {
     mode: "guided" | "independent";
@@ -22,16 +22,21 @@ export default function BankingSim({ mode, onComplete, onError }: Props) {
     const [score, setScore] = useState(0);
     const [errors, setErrors] = useState(0);
     const isGuided = mode === "guided";
-    const user = FAKE_CREDENTIALS.user;
 
     const handleLogin = () => {
-        if (username === user.username && password === user.password) {
-            setScore((s) => s + 20); setStep("2fa"); setLoginError("");
-        } else { setLoginError("Invalid credentials."); setErrors((e) => e + 1); onError(); }
+        if (username.trim() && password.trim()) {
+            setScore((s) => s + 20);
+            setStep("2fa");
+            setLoginError("");
+        } else {
+            setLoginError("Please enter your user ID and PIN.");
+            setErrors((e) => e + 1);
+            onError();
+        }
     };
 
     const handle2FA = () => {
-        if (code2fa === FAKE_2FA_CODE) { setScore((s) => s + 20); setStep("dashboard"); }
+        if (code2fa.replace(/\D/g, "").length >= 4) { setScore((s) => s + 20); setStep("dashboard"); }
         else { setErrors((e) => e + 1); onError(); }
     };
 
@@ -39,12 +44,12 @@ export default function BankingSim({ mode, onComplete, onError }: Props) {
     if (step === "login") {
         return (
             <div className="max-w-lg mx-auto mt-8 p-4">
-                <div className="bg-[#c8102e] text-white p-6 rounded-t-xl">
+                <div className="bg-[#4f46e5] text-white p-6 rounded-t-xl">
                     <div className="flex items-center gap-3">
                         <span className="text-3xl">🏦</span>
                         <div>
-                            <h2 className="text-2xl font-bold">DBS digibank</h2>
-                            <p className="text-sm text-red-200">Practice Banking Portal</p>
+                            <h2 className="text-2xl font-bold">Practice Bank</h2>
+                            <p className="text-sm text-indigo-200">Practice Banking Portal</p>
                         </div>
                     </div>
                 </div>
@@ -69,11 +74,7 @@ export default function BankingSim({ mode, onComplete, onError }: Props) {
                             Log In
                         </button>
                     </div>
-                    {isGuided && (
-                        <div className="mt-6 bg-green-50 border-2 border-green-200 rounded-xl p-4 text-sm text-green-800">
-                            💡 <strong>Credentials:</strong> <code>{user.username}</code> / <code>{user.password}</code>
-                        </div>
-                    )}
+                    {/* Guided hints should not reveal real credentials — secrets are redacted */}
                 </div>
                 <div className="mt-4 bg-amber-50 border-2 border-amber-200 rounded-xl p-3 text-center">
                     <span className="text-sm font-bold text-amber-800">⚠️ PRACTICE MODE — Not real DBS banking</span>
@@ -86,21 +87,17 @@ export default function BankingSim({ mode, onComplete, onError }: Props) {
     if (step === "2fa") {
         return (
             <div className="max-w-lg mx-auto mt-8 p-4">
-                <div className="bg-[#c8102e] text-white p-4 rounded-t-xl"><span className="font-bold">Verify Your Identity</span></div>
+                <div className="bg-[#4f46e5] text-white p-4 rounded-t-xl"><span className="font-bold">Verify Your Identity</span></div>
                 <div className="bg-white border-2 border-gray-200 rounded-b-xl p-8 text-center">
                     <div className="text-4xl mb-4">📱</div>
-                    <p className="text-gray-600 mb-6">Enter OTP sent to ****{user.phone.slice(-4)}</p>
+                    <p className="text-gray-600 mb-6">Enter the verification code sent to your device.</p>
                     <input type="text" value={code2fa} onChange={(e) => setCode2fa(e.target.value.replace(/\D/g, "").slice(0, 6))}
                         maxLength={6} className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 text-2xl text-center tracking-[0.5em] font-mono focus:border-[#c8102e] focus:outline-none"
                         onKeyDown={(e) => e.key === "Enter" && handle2FA()} />
                     <button onClick={handle2FA}
-                        className={`w-full mt-6 bg-[#c8102e] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#a00d24]
+                        className={`w-full mt-6 bg-[#4f46e5] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#3f3fcf]
               ${isGuided ? "ring-4 ring-blue-400 ring-offset-2" : ""}`}>Verify</button>
-                    {isGuided && (
-                        <div className="mt-4 bg-green-50 border-2 border-green-200 rounded-xl p-3 text-sm text-green-800">
-                            💡 OTP: <code className="text-lg">{FAKE_2FA_CODE}</code>
-                        </div>
-                    )}
+                    {/* Do not reveal OTP in the UI; guided hints can describe the process only. */}
                 </div>
             </div>
         );
@@ -110,16 +107,16 @@ export default function BankingSim({ mode, onComplete, onError }: Props) {
     if (step === "dashboard") {
         return (
             <div className="max-w-3xl mx-auto mt-8 p-4">
-                <div className="bg-[#c8102e] text-white p-4 rounded-t-xl flex items-center justify-between">
+                <div className="bg-[#4f46e5] text-white p-4 rounded-t-xl flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <span className="text-2xl">🏦</span>
-                        <span className="font-bold">DBS digibank</span>
+                        <span className="font-bold">Practice Bank</span>
                     </div>
                     <button onClick={() => { setScore((s) => s + 20); onComplete(score + 20, 100, errors); }}
-                        className="bg-white text-[#c8102e] px-4 py-2 rounded-xl text-sm font-semibold">Logout</button>
+                        className="bg-white text-[#4f46e5] px-4 py-2 rounded-xl text-sm font-semibold">Logout</button>
                 </div>
                 <div className="bg-white border-2 border-gray-200 rounded-b-xl p-6">
-                    <h3 className="text-xl font-bold mb-1">Welcome, {user.fullName.split(" ")[0]}</h3>
+                    <h3 className="text-xl font-bold mb-1">Welcome, {username ? username.split(".")[0] : "Learner"}</h3>
                     <p className="text-sm text-gray-500 mb-6">Account: {FAKE_BANK.accountNumber} • {FAKE_BANK.accountType}</p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -147,7 +144,7 @@ export default function BankingSim({ mode, onComplete, onError }: Props) {
 
                     {isGuided && (
                         <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-                            📝 <strong>Guided:</strong> Click &quot;Transactions&quot; to view recent activity, or &quot;Transfer&quot; to practise sending money.
+                            📝 <strong>Guided:</strong> Follow the steps shown on screen; do not share real credentials.
                         </div>
                     )}
                 </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FAKE_HEALTHCARE, FAKE_CREDENTIALS } from "@/lib/credentials";
+import { FAKE_HEALTHCARE } from "@/lib/credentials";
 
 interface Props {
     mode: "guided" | "independent";
@@ -19,7 +19,6 @@ export default function HealthcareSim({ mode, onComplete, onError }: Props) {
     const [score, setScore] = useState(0);
     const [errors, setErrors] = useState(0);
     const isGuided = mode === "guided";
-    const user = FAKE_CREDENTIALS.user;
     const { doctors, availableDates, timeSlots } = FAKE_HEALTHCARE;
 
     const doctor = selectedDoctor !== null ? doctors.find((d) => d.id === selectedDoctor) : null;
@@ -188,8 +187,8 @@ export default function HealthcareSim({ mode, onComplete, onError }: Props) {
 
                     <div className="space-y-3 mb-6">
                         {[
-                            { label: "Patient", value: user.fullName },
-                            { label: "NRIC", value: user.nric },
+                            { label: "Patient", value: "Learner" },
+                            { label: "NRIC", value: "—" },
                             { label: "Doctor", value: doctor?.name || "" },
                             { label: "Clinic", value: doctor?.clinic || "" },
                             { label: "Date", value: selectedDate },

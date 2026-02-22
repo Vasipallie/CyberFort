@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { FAKE_CREDENTIALS, FAKE_2FA_CODE } from "@/lib/credentials";
 
 interface Props {
     mode: "guided" | "independent";
@@ -22,23 +21,22 @@ export default function GovLoginSim({ mode, onComplete, onError }: Props) {
     const [errors, setErrors] = useState(0);
     const [showProfile, setShowProfile] = useState(false);
 
-    const user = FAKE_CREDENTIALS.user;
     const isGuided = mode === "guided";
 
     const handleLogin = () => {
-        if (username === user.username && password === user.password) {
+        if (username.trim() && password.trim()) {
             setScore((s) => s + 30);
             setStep("2fa");
             setLoginError("");
         } else {
-            setLoginError("Incorrect username or password. Please try again.");
+            setLoginError("Please enter your user ID and password.");
             setErrors((e) => e + 1);
             onError();
         }
     };
 
     const handle2FA = () => {
-        if (code2fa === FAKE_2FA_CODE) {
+        if (code2fa.replace(/\D/g, "").length >= 4) {
             setScore((s) => s + 30);
             setStep("dashboard");
             setError2fa("");
@@ -54,18 +52,17 @@ export default function GovLoginSim({ mode, onComplete, onError }: Props) {
         onComplete(score + 20, 100, errors);
     };
 
-    // SingPass Landing
+    // Landing (practice government portal)
     if (step === "landing") {
         return (
             <div className="max-w-lg mx-auto mt-8 p-4">
-                {/* SingPass-style header */}
                 <div className="bg-[#c41f30] text-white p-6 rounded-t-xl">
                     <div className="flex items-center gap-3">
                         <div className="bg-white rounded p-2">
-                            <span className="text-[#c41f30] font-black text-xl">SP</span>
+                            <span className="text-[#c41f30] font-black text-xl">GP</span>
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold">SingPass</h2>
+                            <h2 className="text-2xl font-bold">Government Portal</h2>
                             <p className="text-sm text-red-200">Practice Government Portal</p>
                         </div>
                     </div>
@@ -81,7 +78,7 @@ export default function GovLoginSim({ mode, onComplete, onError }: Props) {
                         <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6 text-left">
                             <p className="text-sm text-blue-800 font-medium">
                                 📝 <strong>Guided Instruction:</strong><br />
-                                Click the &quot;Log In with SingPass&quot; button to proceed to the login page.
+                                Click the &quot;Log In&quot; button to proceed to the login page.
                             </p>
                         </div>
                     )}
@@ -92,7 +89,7 @@ export default function GovLoginSim({ mode, onComplete, onError }: Props) {
                        hover:bg-[#a01828] transition-all min-h-[56px]
                        ${isGuided ? "ring-4 ring-blue-400 ring-offset-2 animate-pulse" : ""}`}
                     >
-                        Log In with SingPass
+                        Log In
                     </button>
 
                     {isGuided && (
@@ -115,9 +112,9 @@ export default function GovLoginSim({ mode, onComplete, onError }: Props) {
             <div className="max-w-lg mx-auto mt-8 p-4">
                 <div className="bg-[#c41f30] text-white p-4 rounded-t-xl flex items-center gap-3">
                     <div className="bg-white rounded p-1.5">
-                        <span className="text-[#c41f30] font-black text-lg">SP</span>
+                        <span className="text-[#c41f30] font-black text-lg">GP</span>
                     </div>
-                    <span className="font-bold text-lg">SingPass Login</span>
+                    <span className="font-bold text-lg">Government Login</span>
                 </div>
 
                 <div className="bg-white border-2 border-gray-200 rounded-b-xl p-8">
@@ -125,15 +122,15 @@ export default function GovLoginSim({ mode, onComplete, onError }: Props) {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">SingPass ID</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">User ID</label>
                             <input
                                 type="text"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Enter your SingPass ID"
+                                placeholder="Enter your user ID"
                                 className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg
                          focus:border-[#c41f30] focus:outline-none min-h-[48px]"
-                                aria-label="SingPass ID"
+                                aria-label="User ID"
                             />
                         </div>
                         <div>
@@ -167,18 +164,7 @@ export default function GovLoginSim({ mode, onComplete, onError }: Props) {
                         </button>
                     </div>
 
-                    {isGuided && (
-                        <div className="mt-6 bg-green-50 border-2 border-green-200 rounded-xl p-4">
-                            <p className="text-sm text-green-800">
-                                💡 <strong>Practice Credentials:</strong><br />
-                                User → <code className="bg-green-100 px-2 py-0.5 rounded">{user.username}</code> / <code className="bg-green-100 px-2 py-0.5 rounded">{user.password}</code><br />
-                                Admin → <code className="bg-green-100 px-2 py-0.5 rounded">{FAKE_CREDENTIALS.admin.username}</code> / <code className="bg-green-100 px-2 py-0.5 rounded">{FAKE_CREDENTIALS.admin.password}</code>
-                            </p>
-                            <p className="text-xs text-green-600 mt-2">
-                                Type the username and password above, then click &quot;Sign In&quot;.
-                            </p>
-                        </div>
-                    )}
+                    {/* Guided hints do not reveal repository secrets or real credentials. */}
                 </div>
             </div>
         );
@@ -199,7 +185,7 @@ export default function GovLoginSim({ mode, onComplete, onError }: Props) {
                     <div className="text-4xl mb-4">📱</div>
                     <h3 className="text-xl font-bold text-foreground mb-2">Two-Factor Authentication</h3>
                     <p className="text-gray-600 mb-6 text-sm">
-                        A 6-digit verification code has been sent to your phone ending in ****{user.phone.slice(-4)}
+                        A 6-digit verification code has been sent to your device.
                     </p>
 
                     <input
@@ -233,17 +219,7 @@ export default function GovLoginSim({ mode, onComplete, onError }: Props) {
                         Didn&apos;t receive the code? <button className="text-[#c41f30] hover:underline">Resend</button>
                     </p>
 
-                    {isGuided && (
-                        <div className="mt-6 bg-green-50 border-2 border-green-200 rounded-xl p-4">
-                            <p className="text-sm text-green-800">
-                                💡 <strong>Practice 2FA Code:</strong>{" "}
-                                <code className="bg-green-100 px-2 py-0.5 rounded text-lg">{FAKE_2FA_CODE}</code>
-                            </p>
-                            <p className="text-xs text-green-600 mt-1">
-                                Type this code into the box above, then click &quot;Verify&quot;.
-                            </p>
-                        </div>
-                    )}
+                    {/* Guided hints should not display secret codes. */}
                 </div>
             </div>
         );
@@ -296,7 +272,7 @@ export default function GovLoginSim({ mode, onComplete, onError }: Props) {
                     {/* Welcome */}
                     <div className="p-6">
                         <h3 className="text-2xl font-bold text-foreground mb-1">
-                            Welcome back, {user.fullName.split(" ")[0]}! 👋
+                            Welcome back, {username ? username.split(".")[0] : "Learner"}! 👋
                         </h3>
                         <p className="text-gray-500 text-sm mb-6">Last login: 18 Feb 2026, 10:42 AM</p>
 
@@ -341,12 +317,12 @@ export default function GovLoginSim({ mode, onComplete, onError }: Props) {
     // Profile
     if (showProfile) {
         const profileFields = [
-            { label: "Full Name", value: user.fullName },
-            { label: "NRIC", value: user.nric },
-            { label: "Date of Birth", value: user.dob },
-            { label: "Phone", value: user.phone },
-            { label: "Email", value: user.email },
-            { label: "Address", value: user.address },
+            { label: "Full Name", value: username ? username.replace(/\./g, " ") : "Learner" },
+            { label: "NRIC", value: "—" },
+            { label: "Date of Birth", value: "—" },
+            { label: "Phone", value: "—" },
+            { label: "Email", value: "—" },
+            { label: "Address", value: "—" },
         ];
 
         return (
