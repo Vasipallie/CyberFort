@@ -1,326 +1,269 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { scamExamples } from "@/lib/data";
+import { SCAM_EMAILS, SCAM_QUIZ } from "@/lib/data";
 
 export default function ScamTrainingPage() {
-  const [currentSection, setCurrentSection] = useState<"menu" | "email" | "sms" | "popup" | "quiz">("menu");
-  const [revealedFlags, setRevealedFlags] = useState<Set<string>>(new Set());
-  const [quizAnswers, setQuizAnswers] = useState<Record<number, boolean>>({});
-  const [showQuizResults, setShowQuizResults] = useState(false);
-  const [confidenceMeter, setConfidenceMeter] = useState(0);
+    const [activeTab, setActiveTab] = useState<"emails" | "quiz">("emails");
+    const [currentEmail, setCurrentEmail] = useState(0);
+    const [emailRevealed, setEmailRevealed] = useState(false);
+    const [emailUserChoice, setEmailUserChoice] = useState<string | null>(null);
 
-  const toggleFlag = (id: string) => {
-    const newSet = new Set(revealedFlags);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setRevealedFlags(newSet);
-    setConfidenceMeter(Math.min(100, (newSet.size / 10) * 100));
-  };
+    const [currentQuestion, setCurrentQuestion] = useState(0);
+    const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+    const [quizScore, setQuizScore] = useState(0);
+    const [quizComplete, setQuizComplete] = useState(false);
 
-  const quizQuestions = [
-    { q: "A bank emails you saying your account will be 'SUSPENDED' unless you click a link. What do you do?", correct: "b", options: { a: "Click the link immediately", b: "Ignore it and call your bank directly", c: "Reply asking for more info" } },
-    { q: "You receive an SMS from an unknown number saying 'Hi Mum, this is my new phone'. They ask for $500. What do you do?", correct: "c", options: { a: "Send the money quickly", b: "Ask them questions via SMS", c: "Call your child's original number to verify" } },
-    { q: "A popup says your computer has a virus and to call a number. What should you do?", correct: "b", options: { a: "Call the number right away", b: "Close the popup — it's a scam", c: "Download the suggested software" } },
-    { q: "Which of these is a red flag in a suspicious email?", correct: "a", options: { a: "Urgent language demanding immediate action", b: "A personalised greeting using your name", c: "A familiar sender email address" } },
-    { q: "What should you check first when you receive a suspicious link?", correct: "c", options: { a: "How many people shared it", b: "If it loads fast", c: "The domain name / URL" } },
-  ];
+    const email = SCAM_EMAILS[currentEmail];
+    const question = SCAM_QUIZ[currentQuestion];
 
-  if (currentSection === "menu") {
+    const handleEmailChoice = (choice: string) => {
+        setEmailUserChoice(choice);
+        setEmailRevealed(true);
+    };
+
+    const nextEmail = () => {
+        if (currentEmail < SCAM_EMAILS.length - 1) {
+            setCurrentEmail(currentEmail + 1);
+            setEmailRevealed(false);
+            setEmailUserChoice(null);
+        }
+    };
+
+    const handleQuizAnswer = (index: number) => {
+        if (selectedAnswer !== null) return;
+        setSelectedAnswer(index);
+        if (index === question.correct) {
+            setQuizScore(quizScore + 1);
+        }
+    };
+
+    const nextQuestion = () => {
+        if (currentQuestion < SCAM_QUIZ.length - 1) {
+            setCurrentQuestion(currentQuestion + 1);
+            setSelectedAnswer(null);
+        } else {
+            setQuizComplete(true);
+        }
+    };
+
     return (
-      <div className="py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-french-blue hover:text-cool-sky mb-6 text-lg font-medium">
-            ← Back to Dashboard
-          </Link>
+        <div className="min-h-screen bg-honeydew py-12 px-4">
+            <div className="max-w-4xl mx-auto">
+                <h1 className="text-3xl sm:text-4xl font-bold text-foreground text-center mb-4">
+                    🛡️ Scam Awareness Training
+                </h1>
+                <p className="text-center text-gray-600 mb-8 text-lg">
+                    Learn to spot scams, phishing emails, and suspicious messages. Stay safe online!
+                </p>
 
-          <div className="text-center mb-10">
-            <div className="text-6xl mb-4">🛡️</div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-french-blue mb-3">
-              Scam Awareness Training
-            </h1>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Learn to spot and avoid common online scams through interactive exercises.
-              All examples are fake — this is a safe training environment.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <button onClick={() => setCurrentSection("email")} className="card text-left hover:border-cool-sky group">
-              <div className="text-4xl mb-3">📧</div>
-              <h3 className="text-xl font-bold text-french-blue group-hover:text-cool-sky mb-2">Fake Phishing Emails</h3>
-              <p className="text-gray-600">Learn to identify suspicious emails that try to steal your information.</p>
-            </button>
-            <button onClick={() => setCurrentSection("sms")} className="card text-left hover:border-cool-sky group">
-              <div className="text-4xl mb-3">💬</div>
-              <h3 className="text-xl font-bold text-french-blue group-hover:text-cool-sky mb-2">Fake SMS Messages</h3>
-              <p className="text-gray-600">Spot scam text messages before they trick you.</p>
-            </button>
-            <button onClick={() => setCurrentSection("popup")} className="card text-left hover:border-cool-sky group">
-              <div className="text-4xl mb-3">⚠️</div>
-              <h3 className="text-xl font-bold text-french-blue group-hover:text-cool-sky mb-2">Fake Login Popups</h3>
-              <p className="text-gray-600">Recognize fake security warnings and popups.</p>
-            </button>
-            <button onClick={() => setCurrentSection("quiz")} className="card text-left hover:border-velvet-purple group">
-              <div className="text-4xl mb-3">🧠</div>
-              <h3 className="text-xl font-bold text-french-blue group-hover:text-velvet-purple mb-2">Spot the Red Flag Quiz</h3>
-              <p className="text-gray-600">Test your knowledge with an interactive quiz!</p>
-            </button>
-          </div>
-
-          {/* Real world safety tips */}
-          <div className="card mt-10">
-            <h2 className="text-xl font-bold text-french-blue mb-4">🌍 Real World Safety Tips</h2>
-            <ul className="space-y-3">
-              {[
-                "Never click links in unexpected emails or messages",
-                "Always verify the sender's email address or phone number",
-                "Banks and government agencies will NEVER ask for your password via email or SMS",
-                "If something feels too urgent, it's probably a scam — take your time",
-                "When in doubt, call the organisation directly using their official number",
-                "Look for spelling errors and poor grammar — these are common in scams",
-                "Check the website URL carefully before entering any information",
-                "Never share your OTP (One-Time Password) with anyone",
-              ].map((tip, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <span className="text-green-500 text-lg flex-shrink-0">✅</span>
-                  <span className="text-gray-700">{tip}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (currentSection === "email") {
-    return (
-      <div className="py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <button onClick={() => setCurrentSection("menu")} className="inline-flex items-center gap-2 text-french-blue hover:text-cool-sky mb-6 text-lg font-medium">
-            ← Back to Scam Training
-          </button>
-          <h1 className="text-3xl font-bold text-french-blue mb-8">📧 Fake Phishing Emails</h1>
-
-          {scamExamples.phishingEmails.map((email) => (
-            <div key={email.id} className="card mb-8">
-              <div className="bg-gray-50 rounded-xl p-5 mb-4 font-mono text-sm">
-                <p><strong>From:</strong> <span className="text-red-600">{email.from}</span></p>
-                <p><strong>Subject:</strong> {email.subject}</p>
-                <div className="border-t mt-3 pt-3 whitespace-pre-wrap">{email.body}</div>
-              </div>
-
-              <h3 className="text-lg font-bold text-french-blue mb-3">🚩 Click to Reveal Red Flags:</h3>
-              <div className="space-y-2">
-                {email.redFlags.map((flag, i) => (
-                  <button
-                    key={i}
-                    onClick={() => toggleFlag(`${email.id}-${i}`)}
-                    className={`w-full text-left p-3 rounded-xl transition-all ${
-                      revealedFlags.has(`${email.id}-${i}`)
-                        ? "bg-red-50 border-2 border-red-300 text-red-800"
-                        : "bg-gray-100 hover:bg-gray-200 text-gray-500"
-                    }`}
-                  >
-                    {revealedFlags.has(`${email.id}-${i}`) ? `🚩 ${flag}` : `Click to reveal red flag #${i + 1}`}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (currentSection === "sms") {
-    return (
-      <div className="py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <button onClick={() => setCurrentSection("menu")} className="inline-flex items-center gap-2 text-french-blue hover:text-cool-sky mb-6 text-lg font-medium">
-            ← Back to Scam Training
-          </button>
-          <h1 className="text-3xl font-bold text-french-blue mb-8">💬 Fake SMS Messages</h1>
-
-          {scamExamples.fakeSMS.map((sms) => (
-            <div key={sms.id} className="card mb-8">
-              <div className="bg-green-50 rounded-xl p-5 mb-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center text-sm">📱</span>
-                  <span className="font-semibold text-gray-700">{sms.from}</span>
+                {/* Practice Mode Banner */}
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-xl p-4 text-center mb-8">
+                    <span className="text-sm font-bold text-amber-800">
+                        ⚠️ Practice Mode — These are fake examples for training purposes only
+                    </span>
                 </div>
-                <div className="bg-white rounded-2xl rounded-tl-md p-4 shadow-sm max-w-sm">
-                  <p className="text-gray-800">{sms.message}</p>
-                </div>
-              </div>
 
-              <h3 className="text-lg font-bold text-french-blue mb-3">🚩 Click to Reveal Red Flags:</h3>
-              <div className="space-y-2">
-                {sms.redFlags.map((flag, i) => (
-                  <button
-                    key={i}
-                    onClick={() => toggleFlag(`${sms.id}-${i}`)}
-                    className={`w-full text-left p-3 rounded-xl transition-all ${
-                      revealedFlags.has(`${sms.id}-${i}`)
-                        ? "bg-red-50 border-2 border-red-300 text-red-800"
-                        : "bg-gray-100 hover:bg-gray-200 text-gray-500"
-                    }`}
-                  >
-                    {revealedFlags.has(`${sms.id}-${i}`) ? `🚩 ${flag}` : `Click to reveal red flag #${i + 1}`}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (currentSection === "popup") {
-    return (
-      <div className="py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <button onClick={() => setCurrentSection("menu")} className="inline-flex items-center gap-2 text-french-blue hover:text-cool-sky mb-6 text-lg font-medium">
-            ← Back to Scam Training
-          </button>
-          <h1 className="text-3xl font-bold text-french-blue mb-8">⚠️ Fake Login Popups</h1>
-
-          {scamExamples.fakePopups.map((popup) => (
-            <div key={popup.id} className="card mb-8">
-              <div className="bg-red-900 text-white rounded-xl p-6 mb-4 text-center">
-                <p className="text-3xl mb-2">{popup.title}</p>
-                <p className="text-lg">{popup.message}</p>
-                <button className="mt-4 bg-red-600 px-6 py-2 rounded-lg text-white font-bold cursor-not-allowed opacity-80">
-                  DO NOT CLICK — This is a scam example
-                </button>
-              </div>
-
-              <h3 className="text-lg font-bold text-french-blue mb-3">🚩 Click to Reveal Red Flags:</h3>
-              <div className="space-y-2">
-                {popup.redFlags.map((flag, i) => (
-                  <button
-                    key={i}
-                    onClick={() => toggleFlag(`${popup.id}-${i}`)}
-                    className={`w-full text-left p-3 rounded-xl transition-all ${
-                      revealedFlags.has(`${popup.id}-${i}`)
-                        ? "bg-red-50 border-2 border-red-300 text-red-800"
-                        : "bg-gray-100 hover:bg-gray-200 text-gray-500"
-                    }`}
-                  >
-                    {revealedFlags.has(`${popup.id}-${i}`) ? `🚩 ${flag}` : `Click to reveal red flag #${i + 1}`}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Quiz section
-  return (
-    <div className="py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <button onClick={() => setCurrentSection("menu")} className="inline-flex items-center gap-2 text-french-blue hover:text-cool-sky mb-6 text-lg font-medium">
-          ← Back to Scam Training
-        </button>
-        <h1 className="text-3xl font-bold text-french-blue mb-3">🧠 Spot the Red Flag Quiz</h1>
-        <p className="text-gray-600 mb-8">Test your scam detection knowledge. Take your time!</p>
-
-        {/* Confidence meter */}
-        <div className="card mb-8">
-          <h3 className="font-bold text-french-blue mb-2">Your Confidence Meter</h3>
-          <div className="bg-gray-200 rounded-full h-6 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-cool-sky to-velvet-purple rounded-full transition-all duration-500"
-              style={{ width: `${showQuizResults ? (Object.values(quizAnswers).filter(Boolean).length / quizQuestions.length) * 100 : confidenceMeter}%` }}
-            />
-          </div>
-          <p className="text-sm text-gray-500 mt-1">
-            {showQuizResults
-              ? `${Object.values(quizAnswers).filter(Boolean).length}/${quizQuestions.length} correct!`
-              : "Complete all exercises to build your confidence meter"}
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          {quizQuestions.map((q, idx) => (
-            <div key={idx} className="card">
-              <h3 className="text-lg font-bold text-french-blue mb-4">
-                Question {idx + 1}: {q.q}
-              </h3>
-              <div className="space-y-2">
-                {Object.entries(q.options).map(([key, val]) => {
-                  const selected = quizAnswers[idx] !== undefined;
-                  const isCorrect = key === q.correct;
-                  return (
+                {/* Tab Selector */}
+                <div className="flex gap-2 mb-8 justify-center">
                     <button
-                      key={key}
-                      disabled={selected}
-                      onClick={() => {
-                        setQuizAnswers({ ...quizAnswers, [idx]: key === q.correct });
-                      }}
-                      className={`w-full text-left p-4 rounded-xl transition-all min-h-[48px] ${
-                        selected
-                          ? isCorrect
-                            ? "bg-green-50 border-2 border-green-400 text-green-800"
-                            : "bg-gray-50 text-gray-400 border border-gray-200"
-                          : "bg-gray-50 hover:bg-cool-sky/10 border-2 border-gray-200 hover:border-cool-sky"
-                      }`}
+                        onClick={() => setActiveTab("emails")}
+                        className={`px-6 py-3 rounded-xl font-semibold transition-all min-h-[48px]
+              ${activeTab === "emails"
+                                ? "bg-french-blue text-white shadow-lg"
+                                : "bg-white text-gray-600 hover:bg-gray-100"}`}
                     >
-                      <span className="font-bold mr-2">{key.toUpperCase()}.</span> {val}
-                      {selected && isCorrect && " ✅"}
+                        📧 Spot the Scam Email
                     </button>
-                  );
-                })}
-              </div>
-              {quizAnswers[idx] !== undefined && !quizAnswers[idx] && (
-                <div className="mt-3 bg-orange-50 border border-orange-200 rounded-xl p-3 text-orange-800 text-sm">
-                  Not quite! The correct answer was <strong>{q.correct.toUpperCase()}</strong>. That&apos;s okay — you&apos;re learning! 😊
+                    <button
+                        onClick={() => setActiveTab("quiz")}
+                        className={`px-6 py-3 rounded-xl font-semibold transition-all min-h-[48px]
+              ${activeTab === "quiz"
+                                ? "bg-french-blue text-white shadow-lg"
+                                : "bg-white text-gray-600 hover:bg-gray-100"}`}
+                    >
+                        ❓ Scam Quiz
+                    </button>
                 </div>
-              )}
-              {quizAnswers[idx] === true && (
-                <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-3 text-green-800 text-sm">
-                  Excellent! You got it right! 🎉
-                </div>
-              )}
+
+                {/* Email Section */}
+                {activeTab === "emails" && (
+                    <div>
+                        <div className="text-sm text-gray-500 mb-4 text-center">
+                            Email {currentEmail + 1} of {SCAM_EMAILS.length}
+                        </div>
+
+                        {/* Fake Email */}
+                        <div className="card bg-white mb-6">
+                            <div className="border-b pb-4 mb-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm text-gray-500">From:</span>
+                                    <span className="text-sm font-medium text-foreground">{email.from}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-gray-500">Subject:</span>
+                                    <span className="text-sm font-bold text-foreground">{email.subject}</span>
+                                </div>
+                            </div>
+                            <div className="whitespace-pre-line text-gray-700 text-sm leading-relaxed mb-6">
+                                {email.body}
+                            </div>
+
+                            {!emailRevealed ? (
+                                <div className="flex flex-wrap gap-3 justify-center">
+                                    <button
+                                        onClick={() => handleEmailChoice("scam")}
+                                        className="btn-primary bg-red-500 hover:bg-red-600"
+                                    >
+                                        🚫 This is a SCAM
+                                    </button>
+                                    <button
+                                        onClick={() => handleEmailChoice("safe")}
+                                        className="btn-primary bg-green-500 hover:bg-green-600"
+                                    >
+                                        ✅ This is SAFE
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className={`rounded-xl p-6 ${email.isScam
+                                    ? (emailUserChoice === "scam" ? "bg-green-50 border-2 border-green-200" : "bg-red-50 border-2 border-red-200")
+                                    : (emailUserChoice === "safe" ? "bg-green-50 border-2 border-green-200" : "bg-red-50 border-2 border-red-200")
+                                    }`}>
+                                    <div className="text-lg font-bold mb-2">
+                                        {(email.isScam && emailUserChoice === "scam") || (!email.isScam && emailUserChoice === "safe")
+                                            ? "✅ Correct! Well done!"
+                                            : "❌ Not quite — let's learn from this!"
+                                        }
+                                    </div>
+                                    <p className="text-sm text-gray-700 mb-3">
+                                        This email is <strong>{email.isScam ? "a SCAM" : "SAFE"}</strong>.
+                                    </p>
+                                    {email.isScam && email.redFlags.length > 0 && (
+                                        <div>
+                                            <p className="font-semibold text-sm mb-2">🚩 Red Flags to Watch For:</p>
+                                            <ul className="space-y-1">
+                                                {email.redFlags.map((flag, i) => (
+                                                    <li key={i} className="text-sm text-gray-600 flex items-start gap-2">
+                                                        <span className="text-red-500 mt-0.5">⚠️</span> {flag}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {currentEmail < SCAM_EMAILS.length - 1 && (
+                                        <button onClick={nextEmail} className="btn-primary mt-4">
+                                            Next Email →
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Safety Tips */}
+                        <div className="card bg-blue-50 border-2 border-blue-200">
+                            <h3 className="font-bold text-lg text-foreground mb-3">💡 General Safety Tips</h3>
+                            <ul className="space-y-2 text-sm text-gray-700">
+                                <li>✅ Check the sender&apos;s email address carefully — scammers use fake domains</li>
+                                <li>✅ Never click links in unexpected emails or SMS</li>
+                                <li>✅ Real government agencies will never ask for your password via email</li>
+                                <li>✅ If something sounds too good to be true, it probably is</li>
+                                <li>✅ When in doubt, call the official number (not the one in the email)</li>
+                                <li>✅ Report suspicious messages to ScamShield (1799)</li>
+                            </ul>
+                        </div>
+                    </div>
+                )}
+
+                {/* Quiz Section */}
+                {activeTab === "quiz" && (
+                    <div>
+                        {!quizComplete ? (
+                            <div>
+                                <div className="text-sm text-gray-500 mb-4 text-center">
+                                    Question {currentQuestion + 1} of {SCAM_QUIZ.length} • Score: {quizScore}/{currentQuestion + (selectedAnswer !== null ? 1 : 0)}
+                                </div>
+
+                                <div className="card">
+                                    <h3 className="text-lg font-bold text-foreground mb-6">
+                                        {question.question}
+                                    </h3>
+
+                                    <div className="space-y-3">
+                                        {question.options.map((option, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => handleQuizAnswer(i)}
+                                                disabled={selectedAnswer !== null}
+                                                className={`w-full text-left p-4 rounded-xl transition-all text-sm font-medium
+                          ${selectedAnswer === null
+                                                        ? "bg-gray-50 hover:bg-cool-sky/10 hover:border-cool-sky border-2 border-gray-200"
+                                                        : i === question.correct
+                                                            ? "bg-green-50 border-2 border-green-500 text-green-800"
+                                                            : selectedAnswer === i
+                                                                ? "bg-red-50 border-2 border-red-500 text-red-800"
+                                                                : "bg-gray-50 border-2 border-gray-200 opacity-50"
+                                                    }`}
+                                            >
+                                                <span className="font-bold mr-2">
+                                                    {String.fromCharCode(65 + i)}.
+                                                </span>
+                                                {option}
+                                                {selectedAnswer !== null && i === question.correct && " ✅"}
+                                                {selectedAnswer === i && i !== question.correct && " ❌"}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {selectedAnswer !== null && (
+                                        <div className={`mt-6 p-4 rounded-xl ${selectedAnswer === question.correct
+                                            ? "bg-green-50 border-2 border-green-200"
+                                            : "bg-amber-50 border-2 border-amber-200"
+                                            }`}>
+                                            <p className="font-bold mb-2">
+                                                {selectedAnswer === question.correct ? "✅ Correct!" : "💡 Not quite — here's why:"}
+                                            </p>
+                                            <p className="text-sm text-gray-700">{question.explanation}</p>
+                                            <button onClick={nextQuestion} className="btn-primary mt-4">
+                                                {currentQuestion < SCAM_QUIZ.length - 1 ? "Next Question →" : "See Results →"}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="card text-center">
+                                <div className="text-5xl mb-4">🎉</div>
+                                <h2 className="text-2xl font-bold text-foreground mb-2">Quiz Complete!</h2>
+                                <p className="text-gray-600 mb-4">
+                                    You scored <strong>{quizScore}</strong> out of <strong>{SCAM_QUIZ.length}</strong>
+                                </p>
+                                <div className="text-4xl mb-4">
+                                    {quizScore === SCAM_QUIZ.length ? "🏆" : quizScore >= SCAM_QUIZ.length / 2 ? "👍" : "📚"}
+                                </div>
+                                <p className="text-gray-600 mb-6">
+                                    {quizScore === SCAM_QUIZ.length
+                                        ? "Perfect score! You're a scam-spotting expert! 🌟"
+                                        : quizScore >= SCAM_QUIZ.length / 2
+                                            ? "Good job! Keep practising to improve even more."
+                                            : "Don't worry — review the tips above and try again!"}
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        setCurrentQuestion(0);
+                                        setSelectedAnswer(null);
+                                        setQuizScore(0);
+                                        setQuizComplete(false);
+                                    }}
+                                    className="btn-primary"
+                                >
+                                    🔄 Try Again
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
-          ))}
         </div>
-
-        {Object.keys(quizAnswers).length === quizQuestions.length && !showQuizResults && (
-          <div className="text-center mt-8">
-            <button onClick={() => setShowQuizResults(true)} className="btn-accent text-xl px-10 py-5">
-              🎓 See My Results
-            </button>
-          </div>
-        )}
-
-        {showQuizResults && (
-          <div className="card mt-8 text-center">
-            <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-2xl font-bold text-french-blue mb-2">Quiz Complete!</h2>
-            <p className="text-xl text-gray-600 mb-4">
-              You scored <strong className="text-velvet-purple">{Object.values(quizAnswers).filter(Boolean).length}/{quizQuestions.length}</strong>
-            </p>
-            <p className="text-gray-500 mb-6">
-              Every question you practise makes you safer online. You&apos;re doing great!
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              <button onClick={() => { setQuizAnswers({}); setShowQuizResults(false); }} className="btn-secondary">
-                🔁 Try Again
-              </button>
-              <Link href="/dashboard" className="btn-primary">
-                📋 More Modules
-              </Link>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    );
 }

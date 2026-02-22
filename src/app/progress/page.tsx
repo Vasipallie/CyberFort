@@ -1,219 +1,228 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { mockUserProgress, mockCertificates, modules } from "@/lib/data";
+import { MODULES } from "@/lib/data";
 
-export default function ProgressPage() {
-  const [activeTab, setActiveTab] = useState<"overview" | "certificates">("overview");
-
-  const completedModules = mockUserProgress.filter((p) => p.completed);
-  const totalHours = mockUserProgress.reduce((sum, p) => sum + p.timeSpent, 0);
-  const avgConfidenceBefore = Math.round(mockUserProgress.reduce((sum, p) => sum + p.confidenceBefore, 0) / mockUserProgress.length);
-  const avgConfidenceAfter = Math.round(mockUserProgress.reduce((sum, p) => sum + p.confidenceAfter, 0) / mockUserProgress.length);
-  const avgErrorReduction = Math.round(mockUserProgress.reduce((sum, p) => sum + p.errorsReduced, 0) / mockUserProgress.length);
-  const scamModule = mockUserProgress.find((p) => p.moduleId === "scam-awareness");
-  const scamAccuracy = scamModule ? scamModule.score : 0;
-
-  return (
-    <div className="py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl sm:text-4xl font-bold text-french-blue mb-3">My Progress</h1>
-        <p className="text-lg text-gray-600 mb-8">Track your learning journey and earn certificates</p>
-
-        {/* Tab switcher */}
-        <div className="flex gap-2 mb-8">
-          <button
-            onClick={() => setActiveTab("overview")}
-            className={`px-6 py-3 rounded-xl font-semibold min-h-[48px] transition-colors ${
-              activeTab === "overview" ? "bg-french-blue text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            📊 Overview
-          </button>
-          <button
-            onClick={() => setActiveTab("certificates")}
-            className={`px-6 py-3 rounded-xl font-semibold min-h-[48px] transition-colors ${
-              activeTab === "certificates" ? "bg-velvet-purple text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-            }`}
-          >
-            🎓 Certificates
-          </button>
-        </div>
-
-        {activeTab === "overview" && (
-          <>
-            {/* Summary stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              <StatCard icon="📚" label="Modules Completed" value={`${completedModules.length}/${modules.length}`} />
-              <StatCard icon="⏱️" label="Total Practice Time" value={`${totalHours} min`} />
-              <StatCard icon="📉" label="Errors Reduced" value={`${avgErrorReduction}%`} />
-              <StatCard icon="😊" label="Confidence Before" value={`${avgConfidenceBefore}%`} color="text-orange-500" />
-              <StatCard icon="🌟" label="Confidence After" value={`${avgConfidenceAfter}%`} color="text-green-600" />
-              <StatCard icon="🛡️" label="Scam Detection" value={`${scamAccuracy}%`} />
-            </div>
-
-            {/* Improvement chart (visual bar chart) */}
-            <div className="card mb-8">
-              <h2 className="text-xl font-bold text-french-blue mb-6">📈 Improvement Over Time</h2>
-              <div className="space-y-4">
-                {mockUserProgress.map((p) => {
-                  const mod = modules.find((m) => m.id === p.moduleId);
-                  return (
-                    <div key={p.moduleId}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-700">
-                          {mod?.icon} {mod?.title}
-                        </span>
-                        <span className="text-sm text-gray-500">
-                          {p.confidenceBefore}% → {p.confidenceAfter}%
-                        </span>
-                      </div>
-                      <div className="flex gap-1 h-6">
-                        <div
-                          className="bg-orange-300 rounded-l-full h-full transition-all"
-                          style={{ width: `${p.confidenceBefore}%` }}
-                          title={`Before: ${p.confidenceBefore}%`}
-                        />
-                        <div
-                          className="bg-green-400 rounded-r-full h-full transition-all"
-                          style={{ width: `${p.confidenceAfter - p.confidenceBefore}%` }}
-                          title={`Improvement: +${p.confidenceAfter - p.confidenceBefore}%`}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex items-center gap-4 mt-4 text-sm text-gray-500">
-                <span className="flex items-center gap-1"><span className="w-4 h-4 bg-orange-300 rounded-full inline-block" /> Before</span>
-                <span className="flex items-center gap-1"><span className="w-4 h-4 bg-green-400 rounded-full inline-block" /> Improvement</span>
-              </div>
-            </div>
-
-            {/* Error reduction trend */}
-            <div className="card mb-8">
-              <h2 className="text-xl font-bold text-french-blue mb-6">📉 Error Reduction Trend</h2>
-              <div className="flex items-end gap-4 h-48">
-                {mockUserProgress.map((p) => {
-                  const mod = modules.find((m) => m.id === p.moduleId);
-                  return (
-                    <div key={p.moduleId} className="flex-1 flex flex-col items-center">
-                      <div
-                        className="w-full bg-gradient-to-t from-cool-sky to-french-blue rounded-t-lg transition-all"
-                        style={{ height: `${p.errorsReduced}%` }}
-                        title={`${p.errorsReduced}% errors reduced`}
-                      />
-                      <p className="text-xs text-gray-500 mt-2 text-center truncate w-full">{mod?.icon}</p>
-                      <p className="text-xs font-bold text-french-blue">{p.errorsReduced}%</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Confidence growth chart */}
-            <div className="card">
-              <h2 className="text-xl font-bold text-french-blue mb-6">🌱 Confidence Growth</h2>
-              <div className="relative h-48 flex items-end gap-2">
-                {mockUserProgress.map((p) => {
-                  const mod = modules.find((m) => m.id === p.moduleId);
-                  return (
-                    <div key={p.moduleId} className="flex-1 flex flex-col items-center gap-1">
-                      <div className="w-full flex flex-col items-center">
-                        <span className="text-xs text-green-600 font-bold">{p.confidenceAfter}%</span>
-                        <div
-                          className="w-full bg-gradient-to-t from-green-400 to-green-300 rounded-t-lg"
-                          style={{ height: `${(p.confidenceAfter / 100) * 150}px` }}
-                        />
-                      </div>
-                      <p className="text-xs text-gray-500">{mod?.icon}</p>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-sm text-gray-500 text-center mt-4">
-                Your confidence is growing! Independence score: <strong className="text-french-blue">{Math.round(avgConfidenceAfter * 0.9)}%</strong>
-              </p>
-            </div>
-          </>
-        )}
-
-        {activeTab === "certificates" && (
-          <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {mockCertificates.map((cert) => (
-                <div key={cert.id} className="certificate-border rounded-2xl p-8 shadow-lg">
-                  <div className="text-center">
-                    <div className="text-5xl mb-3">🎓</div>
-                    <h2 className="text-sm font-bold text-velvet-purple tracking-widest uppercase mb-4">
-                      Certificate of Completion
-                    </h2>
-                    <h3 className="text-2xl font-bold text-french-blue mb-1">
-                      {cert.userName}
-                    </h3>
-                    <p className="text-gray-600 mb-4">has successfully completed</p>
-                    <h4 className="text-xl font-bold text-velvet-purple mb-6">
-                      {cert.moduleTitle}
-                    </h4>
-
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div className="bg-honeydew rounded-xl p-3">
-                        <p className="text-xs text-gray-500">Date</p>
-                        <p className="font-bold text-french-blue text-sm">{cert.completedDate}</p>
-                      </div>
-                      <div className="bg-honeydew rounded-xl p-3">
-                        <p className="text-xs text-gray-500">Practice Hours</p>
-                        <p className="font-bold text-french-blue text-sm">{cert.practiceHours}h</p>
-                      </div>
-                      <div className="bg-honeydew rounded-xl p-3">
-                        <p className="text-xs text-gray-500">Confidence Improvement</p>
-                        <p className="font-bold text-green-600 text-sm">+{cert.confidenceImprovement}%</p>
-                      </div>
-                      <div className="bg-honeydew rounded-xl p-3">
-                        <p className="text-xs text-gray-500">Certificate ID</p>
-                        <p className="font-bold text-velvet-purple text-xs">{cert.certificateId}</p>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-velvet-purple/20 pt-4">
-                      <p className="text-xs text-gray-400 mb-3">Issued by SafeDigital • Risk-Free Digital Training</p>
-                      <button
-                        onClick={() => {
-                          // Simple print-to-PDF simulation
-                          if (typeof window !== "undefined") window.print();
-                        }}
-                        className="btn-accent text-sm py-2 px-6"
-                      >
-                        📥 Download as PDF
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {mockCertificates.length === 0 && (
-              <div className="text-center py-16">
-                <div className="text-6xl mb-4">📋</div>
-                <h2 className="text-2xl font-bold text-french-blue mb-2">No Certificates Yet</h2>
-                <p className="text-gray-600 mb-6">Complete a module to earn your first certificate!</p>
-                <Link href="/dashboard" className="btn-primary">▶️ Start Practising</Link>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
+interface ModuleProgress {
+    completions: number;
+    bestScore: number;
+    totalTime: number;
+    lastCompleted: string;
+    errors: number;
 }
 
-function StatCard({ icon, label, value, color }: { icon: string; label: string; value: string; color?: string }) {
-  return (
-    <div className="card text-center">
-      <div className="text-3xl mb-2">{icon}</div>
-      <div className={`text-2xl font-bold mb-1 ${color || "text-french-blue"}`}>{value}</div>
-      <p className="text-sm text-gray-500">{label}</p>
-    </div>
-  );
+interface Certificate {
+    module: string;
+    date: string;
+    score: number;
+    time: string;
+}
+
+export default function ProgressPage() {
+    const [progress, setProgress] = useState<Record<string, ModuleProgress>>({});
+    const [certificates, setCertificates] = useState<Certificate[]>([]);
+    const [confidenceBefore, setConfidenceBefore] = useState<number | null>(null);
+    const [confidenceAfter, setConfidenceAfter] = useState(3);
+    const [afterSubmitted, setAfterSubmitted] = useState(false);
+
+    useEffect(() => {
+        const p = JSON.parse(localStorage.getItem("cyberfort-progress") || "{}");
+        setProgress(p);
+        const c = JSON.parse(localStorage.getItem("cyberfort-certificates") || "[]");
+        setCertificates(c);
+        const cb = localStorage.getItem("cyberfort-confidence-before");
+        if (cb) setConfidenceBefore(parseInt(cb));
+        const ca = localStorage.getItem("cyberfort-confidence-after");
+        if (ca) setAfterSubmitted(true);
+    }, []);
+
+    const totalCompletions = Object.values(progress).reduce((sum, p) => sum + p.completions, 0);
+    const totalTime = Object.values(progress).reduce((sum, p) => sum + p.totalTime, 0);
+    const totalErrors = Object.values(progress).reduce((sum, p) => sum + p.errors, 0);
+    const completedModules = Object.keys(progress).length;
+    const independence = completedModules > 0 ? Math.min(100, Math.round((completedModules / MODULES.length) * 100)) : 0;
+
+    const formatTime = (seconds: number) => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        if (h > 0) return `${h}h ${m}m`;
+        return `${m}m`;
+    };
+
+    return (
+        <div className="min-h-screen bg-honeydew py-12 px-4">
+            <div className="max-w-5xl mx-auto">
+                <h1 className="text-3xl sm:text-4xl font-bold text-foreground text-center mb-4">
+                    🏆 My Progress
+                </h1>
+                <p className="text-center text-gray-600 mb-12 text-lg">
+                    Track your learning journey and celebrate your achievements
+                </p>
+
+                {/* Stats Overview */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div className="card text-center">
+                        <div className="text-3xl mb-2">📚</div>
+                        <div className="text-2xl font-bold text-french-blue">{completedModules}/{MODULES.length}</div>
+                        <div className="text-sm text-gray-500">Modules Completed</div>
+                    </div>
+                    <div className="card text-center">
+                        <div className="text-3xl mb-2">⏱️</div>
+                        <div className="text-2xl font-bold text-french-blue">{formatTime(totalTime)}</div>
+                        <div className="text-sm text-gray-500">Total Practice Time</div>
+                    </div>
+                    <div className="card text-center">
+                        <div className="text-3xl mb-2">❌</div>
+                        <div className="text-2xl font-bold text-french-blue">{totalErrors}</div>
+                        <div className="text-sm text-gray-500">Total Errors (Learning!)</div>
+                    </div>
+                    <div className="card text-center">
+                        <div className="text-3xl mb-2">🎯</div>
+                        <div className="text-2xl font-bold text-green-600">{independence}%</div>
+                        <div className="text-sm text-gray-500">Independence Level</div>
+                    </div>
+                </div>
+
+                {/* Module Progress */}
+                <div className="card mb-8">
+                    <h2 className="text-xl font-bold text-foreground mb-6">📊 Module Progress</h2>
+                    <div className="space-y-4">
+                        {MODULES.map((mod) => {
+                            const p = progress[mod.id];
+                            const pct = p ? Math.min(100, p.completions * 25) : 0;
+                            return (
+                                <div key={mod.id} className="flex items-center gap-4">
+                                    <span className="text-2xl w-8">{mod.icon}</span>
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="font-medium text-sm">{mod.title}</span>
+                                            <span className="text-xs text-gray-500">
+                                                {p ? `${p.completions} completion${p.completions !== 1 ? "s" : ""}` : "Not started"}
+                                            </span>
+                                        </div>
+                                        <div className="w-full bg-gray-200 rounded-full h-3">
+                                            <div
+                                                className="bg-gradient-to-r from-cool-sky to-french-blue h-3 rounded-full progress-animate transition-all"
+                                                style={{ width: `${pct}%` }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <Link
+                                        href={`/module?id=${mod.id}`}
+                                        className="text-sm text-french-blue hover:underline font-medium"
+                                    >
+                                        {p ? "Retry" : "Start"} →
+                                    </Link>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Certificates */}
+                <div className="card mb-8">
+                    <h2 className="text-xl font-bold text-foreground mb-6">🎓 My Certificates</h2>
+                    {certificates.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500">
+                            <div className="text-4xl mb-3">📜</div>
+                            <p>No certificates yet. Complete a module to earn your first one!</p>
+                            <Link href="/dashboard" className="btn-primary mt-4 inline-block">Start Practising</Link>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {certificates.map((cert, i) => (
+                                <div
+                                    key={i}
+                                    className="certificate-border rounded-xl p-5 text-center"
+                                >
+                                    <div className="text-xs text-velvet-purple font-semibold uppercase tracking-wider mb-2">
+                                        Certificate of Completion
+                                    </div>
+                                    <div className="text-3xl mb-2">🏆</div>
+                                    <div className="font-bold text-foreground mb-1">{cert.module}</div>
+                                    <div className="text-sm text-gray-500 mb-2">
+                                        {cert.date} • Score: {cert.score}% • Time: {cert.time}
+                                    </div>
+                                    <div className="text-xs text-velvet-purple/70">
+                                        CyberFort Digital Training Certificate
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    <div className="text-center mt-4 text-sm text-gray-500">
+                        Total certificates issued: <strong>{certificates.length}</strong>
+                    </div>
+                </div>
+
+                {/* Before/After Confidence */}
+                <div className="card">
+                    <h2 className="text-xl font-bold text-foreground mb-6">📈 Confidence Growth</h2>
+                    {confidenceBefore !== null ? (
+                        <div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+                                <div className="text-center p-4 bg-red-50 rounded-xl">
+                                    <div className="text-sm text-gray-500 mb-1">Before Training</div>
+                                    <div className="text-3xl font-bold text-red-500">{confidenceBefore}/5</div>
+                                </div>
+                                <div className="flex items-center justify-center">
+                                    <span className="text-3xl">→</span>
+                                </div>
+                                {afterSubmitted ? (
+                                    <div className="text-center p-4 bg-green-50 rounded-xl">
+                                        <div className="text-sm text-gray-500 mb-1">After Training</div>
+                                        <div className="text-3xl font-bold text-green-500">
+                                            {localStorage.getItem("cyberfort-confidence-after") || confidenceAfter}/5
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center p-4 bg-gray-50 rounded-xl">
+                                        <div className="text-sm text-gray-500 mb-1">After Training</div>
+                                        <div className="text-lg text-gray-400">Rate below ↓</div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {!afterSubmitted && totalCompletions > 0 && (
+                                <div className="bg-cool-sky/5 rounded-xl p-6 text-center">
+                                    <p className="text-sm text-gray-600 mb-4">
+                                        How confident do you feel now after practising?
+                                    </p>
+                                    <div className="flex justify-center gap-3 mb-4">
+                                        {[1, 2, 3, 4, 5].map((n) => (
+                                            <button
+                                                key={n}
+                                                onClick={() => setConfidenceAfter(n)}
+                                                className={`w-12 h-12 rounded-xl text-lg font-bold transition-all
+                          ${confidenceAfter === n
+                                                        ? "bg-french-blue text-white scale-110 shadow-lg"
+                                                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                                    }`}
+                                            >
+                                                {n}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button
+                                        onClick={() => {
+                                            localStorage.setItem("cyberfort-confidence-after", String(confidenceAfter));
+                                            setAfterSubmitted(true);
+                                        }}
+                                        className="btn-primary"
+                                    >
+                                        Submit Rating
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="text-center py-6 text-gray-500">
+                            <p>Visit the <Link href="/" className="text-french-blue hover:underline">homepage</Link> to set your initial confidence rating.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 }

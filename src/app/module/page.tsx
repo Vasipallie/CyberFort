@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { modules } from "@/lib/data";
+import { MODULES } from "@/lib/data";
 import GovLoginSim from "@/components/simulations/GovLoginSim";
 import HealthcareSim from "@/components/simulations/HealthcareSim";
 import PensionSim from "@/components/simulations/PensionSim";
@@ -12,308 +12,295 @@ import PayNowSim from "@/components/simulations/PayNowSim";
 import FormFillingSim from "@/components/simulations/FormFillingSim";
 import ScamSim from "@/components/simulations/ScamSim";
 
-// Map module IDs to their simulation components
-const simulationComponents: Record<string, React.ComponentType<{ isGuided: boolean; onComplete: (score: number, errors: number) => void; onSpeak: (text: string) => void }>> = {
-  "gov-login": GovLoginSim,
-  "healthcare": HealthcareSim,
-  "pension": PensionSim,
-  "banking": BankingSim,
-  "digital-payment": PayNowSim,
-  "form-filling": FormFillingSim,
-  "scam-awareness": ScamSim,
-  "sms-scam": ScamSim,
-};
-
 function ModuleContent() {
-  const searchParams = useSearchParams();
-  const moduleId = searchParams.get("id") || "gov-login";
-  const mod = modules.find((m) => m.id === moduleId) || modules[0];
+    const searchParams = useSearchParams();
+    const moduleId = searchParams.get("id") || "gov-login";
+    const mod = MODULES.find((m) => m.id === moduleId);
 
-  const [mode, setMode] = useState<"select" | "guided" | "independent">("select");
-  const [completed, setCompleted] = useState(false);
-  const [score, setScore] = useState(0);
-  const [errors, setErrors] = useState(0);
-  const [timer, setTimer] = useState(0);
-  const [timerActive, setTimerActive] = useState(false);
-  const [showTimer, setShowTimer] = useState(false);
-  const [narrationOn, setNarrationOn] = useState(false);
+    const [mode, setMode] = useState<"select" | "guided" | "independent">("select");
+    const [completed, setCompleted] = useState(false);
+    const [score, setScore] = useState(0);
+    const [maxScore, setMaxScore] = useState(100);
+    const [errors, setErrors] = useState(0);
+    const [timer, setTimer] = useState(0);
+    const [timerActive, setTimerActive] = useState(false);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (timerActive) {
-      interval = setInterval(() => setTimer((t) => t + 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [timerActive]);
+    useEffect(() => {
+        if (!timerActive) return;
+        const interval = setInterval(() => setTimer((t) => t + 1), 1000);
+        return () => clearInterval(interval);
+    }, [timerActive]);
 
-  const speak = (text: string) => {
-    if (narrationOn && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 0.85;
-      window.speechSynthesis.speak(u);
-    }
-  };
+    const formatTime = (seconds: number) => {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}:${s.toString().padStart(2, "0")}`;
+    };
 
-  const startModule = (selectedMode: "guided" | "independent") => {
-    setMode(selectedMode);
-    setCompleted(false);
-    setScore(0);
-    setErrors(0);
-    setTimer(0);
-    setTimerActive(true);
-  };
+    const handleStart = (selectedMode: "guided" | "independent") => {
+        setMode(selectedMode);
+        setTimerActive(true);
+        setScore(0);
+        setErrors(0);
+        setTimer(0);
+    };
 
-  const handleSimComplete = (simScore: number, simErrors: number) => {
-    setScore(simScore);
-    setErrors(simErrors);
-    setCompleted(true);
-    setTimerActive(false);
-    speak("Congratulations! You have completed this module.");
-  };
+    const handleComplete = useCallback((finalScore: number, finalMaxScore: number, finalErrors: number) => {
+        setCompleted(true);
+        setTimerActive(false);
+        setScore(finalScore);
+        setMaxScore(finalMaxScore);
+        setErrors(finalErrors);
 
-  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+        // Save progress to localStorage
+        const progress = JSON.parse(localStorage.getItem("cyberfort-progress") || "{}");
+        const moduleProgress = progress[moduleId] || { completions: 0, bestScore: 0, totalTime: 0 };
+        moduleProgress.completions += 1;
+        moduleProgress.bestScore = Math.max(moduleProgress.bestScore, finalScore);
+        moduleProgress.totalTime += timer;
+        moduleProgress.lastCompleted = new Date().toISOString();
+        moduleProgress.errors = finalErrors;
+        progress[moduleId] = moduleProgress;
+        localStorage.setItem("cyberfort-progress", JSON.stringify(progress));
 
-  const SimComponent = simulationComponents[moduleId];
+        // Save certificate
+        const certs = JSON.parse(localStorage.getItem("cyberfort-certificates") || "[]");
+        certs.push({
+            module: mod?.title || moduleId,
+            date: new Date().toLocaleDateString("en-SG"),
+            score: Math.round((finalScore / Math.max(finalMaxScore, 1)) * 100),
+            time: formatTime(timer),
+        });
+        localStorage.setItem("cyberfort-certificates", JSON.stringify(certs));
+    }, [moduleId, mod?.title, timer]);
 
-  if (completed) {
-    const maxScore = score + errors * 5;
-    return (
-      <div className="py-12 px-4">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="card">
-            <div className="text-6xl mb-4">🎉</div>
-            <h1 className="text-3xl font-bold text-french-blue mb-3">
-              Module Completed!
-            </h1>
-            <p className="text-xl text-gray-600 mb-6">
-              You&apos;re doing great! You&apos;ve successfully completed{" "}
-              <strong>{mod.title}</strong>.
-            </p>
+    const handleError = useCallback(() => {
+        setErrors((e) => e + 1);
+    }, []);
 
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="bg-honeydew rounded-xl p-4">
-                <p className="text-sm text-gray-500">Score</p>
-                <p className="text-2xl font-bold text-french-blue">{score}</p>
-              </div>
-              <div className="bg-honeydew rounded-xl p-4">
-                <p className="text-sm text-gray-500">Time</p>
-                <p className="text-2xl font-bold text-french-blue">{formatTime(timer)}</p>
-              </div>
-              <div className="bg-honeydew rounded-xl p-4">
-                <p className="text-sm text-gray-500">Errors</p>
-                <p className="text-2xl font-bold text-french-blue">{errors}</p>
-              </div>
-              <div className="bg-honeydew rounded-xl p-4">
-                <p className="text-sm text-gray-500">Confidence</p>
-                <p className="text-2xl font-bold text-green-600">+{Math.max(30, Math.round((score / Math.max(maxScore, 1)) * 100))}%</p>
-              </div>
+    if (!mod) {
+        return (
+            <div className="min-h-screen bg-honeydew py-12 px-4 text-center">
+                <h1 className="text-2xl font-bold">Module not found</h1>
+                <Link href="/dashboard" className="btn-primary mt-4">Back to Dashboard</Link>
             </div>
+        );
+    }
 
-            <div className="flex flex-wrap justify-center gap-4">
-              <Link href="/progress" className="btn-accent">
-                🎓 View Certificate
-              </Link>
-              <button onClick={() => startModule(mode as "guided" | "independent")} className="btn-secondary">
-                🔁 Practice Again
-              </button>
-              <Link href="/dashboard" className="btn-secondary">
-                📋 Back to Modules
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+    // Completion screen
+    if (completed) {
+        const percentage = Math.round((score / Math.max(maxScore, 1)) * 100);
+        return (
+            <div className="min-h-screen bg-honeydew py-12 px-4">
+                <div className="max-w-2xl mx-auto">
+                    <div className="certificate-border rounded-2xl p-8 sm:p-12 text-center">
+                        <div className="text-5xl mb-4">🎓</div>
+                        <h1 className="text-3xl font-bold text-foreground mb-2">Module Completed!</h1>
+                        <p className="text-gray-600 mb-6">
+                            You&apos;re doing great! You&apos;ve successfully completed {mod.title}.
+                        </p>
 
-  if (mode === "select") {
-    return (
-      <div className="py-12 px-4">
-        <div className="max-w-3xl mx-auto">
-          {/* Back button */}
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-french-blue hover:text-cool-sky mb-6 text-lg font-medium">
-            ← Back to Modules
-          </Link>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                            <div className="bg-white rounded-xl p-4 shadow-sm">
+                                <div className="text-sm text-gray-500">Score</div>
+                                <div className="text-2xl font-bold text-french-blue">{percentage}%</div>
+                            </div>
+                            <div className="bg-white rounded-xl p-4 shadow-sm">
+                                <div className="text-sm text-gray-500">Time</div>
+                                <div className="text-2xl font-bold text-french-blue">{formatTime(timer)}</div>
+                            </div>
+                            <div className="bg-white rounded-xl p-4 shadow-sm">
+                                <div className="text-sm text-gray-500">Errors</div>
+                                <div className="text-2xl font-bold text-french-blue">{errors}</div>
+                            </div>
+                            <div className="bg-white rounded-xl p-4 shadow-sm">
+                                <div className="text-sm text-gray-500">Confidence</div>
+                                <div className="text-2xl font-bold text-green-600">
+                                    +{Math.max(30, percentage)}%
+                                </div>
+                            </div>
+                        </div>
 
-          <div className="card mb-6">
-            <div className="flex items-start gap-4 mb-6">
-              <span className="text-5xl">{mod.icon}</span>
-              <div>
-                <div className="text-xs font-semibold text-cool-sky bg-cool-sky/10 px-3 py-1 rounded-full inline-block mb-2">
-                  Practice Mode — Not a Real Website
+                        {/* Certificate */}
+                        <div className="bg-white rounded-xl p-6 border-2 border-velvet-purple/30 mb-6">
+                            <div className="text-xs text-velvet-purple font-semibold mb-2 uppercase tracking-wider">
+                                Certificate of Completion
+                            </div>
+                            <div className="text-lg font-bold text-foreground mb-1">{mod.title}</div>
+                            <div className="text-sm text-gray-500">
+                                Completed on {new Date().toLocaleDateString("en-SG")} • Score: {percentage}%
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap justify-center gap-4">
+                            <button
+                                onClick={() => { setCompleted(false); setMode("select"); }}
+                                className="btn-secondary"
+                            >
+                                🔄 Try Again
+                            </button>
+                            <Link href="/dashboard" className="btn-primary">
+                                📚 More Modules
+                            </Link>
+                            <Link href="/progress" className="btn-accent">
+                                🏆 View Progress
+                            </Link>
+                        </div>
+                    </div>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-french-blue">{mod.title}</h1>
-                <p className="text-gray-600 mt-2">{mod.description}</p>
-              </div>
+            </div>
+        );
+    }
+
+    // Mode selection screen
+    if (mode === "select") {
+        return (
+            <div className="min-h-screen bg-honeydew py-12 px-4">
+                <div className="max-w-4xl mx-auto">
+                    <Link href="/dashboard" className="text-french-blue hover:underline text-sm mb-4 inline-block">
+                        ← Back to Dashboard
+                    </Link>
+
+                    {/* Module info */}
+                    <div className="card mb-8">
+                        <div className="flex items-start gap-4">
+                            <span className="text-5xl">{mod.icon}</span>
+                            <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{mod.title}</h1>
+                                    <span className="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full">
+                                        ⚠️ Practice Mode
+                                    </span>
+                                </div>
+                                <p className="text-gray-600 mb-4">{mod.description}</p>
+                                <div className="flex flex-wrap gap-4 text-sm">
+                                    <span className="bg-gray-100 px-3 py-1 rounded-full">⏱️ Time: {mod.estimatedTime}</span>
+                                    <span className="bg-gray-100 px-3 py-1 rounded-full">📊 Difficulty: {mod.difficulty}</span>
+                                    <span className="bg-gray-100 px-3 py-1 rounded-full">🎮 Type: Interactive</span>
+                                    <span className="bg-gray-100 px-3 py-1 rounded-full">⭐ Rating: {mod.confidenceRating}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6">
+                            <h3 className="font-bold text-lg mb-3">Skills You&apos;ll Learn:</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {mod.skills.map((skill) => (
+                                    <div key={skill} className="flex items-center gap-2 text-gray-600">
+                                        <span className="text-green-500">✓</span> {skill}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Mode selection */}
+                    <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
+                        Choose Your Mode:
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <button
+                            onClick={() => handleStart("guided")}
+                            className="card text-left hover:border-cool-sky border-2 border-transparent transition-all hover:scale-[1.02]"
+                        >
+                            <div className="text-3xl mb-3">🧑‍🏫</div>
+                            <h3 className="text-xl font-bold text-foreground mb-2">Guided Mode</h3>
+                            <p className="text-gray-600 text-sm mb-4">
+                                Step-by-step guidance with highlights, hints, and voice narration. Perfect for first-timers.
+                            </p>
+                            <ul className="space-y-2 text-sm text-gray-600">
+                                <li>✅ Highlighted buttons</li>
+                                <li>✅ Tooltips & hints</li>
+                                <li>✅ Animated hand pointer</li>
+                                <li>✅ Voice narration toggle</li>
+                                <li>✅ Encouraging feedback</li>
+                            </ul>
+                        </button>
+
+                        <button
+                            onClick={() => handleStart("independent")}
+                            className="card text-left hover:border-velvet-purple border-2 border-transparent transition-all hover:scale-[1.02]"
+                        >
+                            <div className="text-3xl mb-3">🎯</div>
+                            <h3 className="text-xl font-bold text-foreground mb-2">Independent Mode</h3>
+                            <p className="text-gray-600 text-sm mb-4">
+                                Realistic simulation without guides. Test your skills in a safe environment.
+                            </p>
+                            <ul className="space-y-2 text-sm text-gray-600">
+                                <li>✅ Realistic interface</li>
+                                <li>✅ No highlighting</li>
+                                <li>✅ Safe error feedback</li>
+                                <li>✅ Optional timer</li>
+                                <li>✅ Performance scoring</li>
+                            </ul>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Simulation view
+    const SimComponent = {
+        "gov-login": GovLoginSim,
+        "healthcare": HealthcareSim,
+        "pension": PensionSim,
+        "banking": BankingSim,
+        "paynow": PayNowSim,
+        "form-filling": FormFillingSim,
+        "scam": ScamSim,
+    }[moduleId];
+
+    return (
+        <div className="min-h-screen bg-gray-50">
+            {/* Top bar */}
+            <div className="bg-white border-b shadow-sm px-4 py-3">
+                <div className="max-w-6xl mx-auto flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Link href="/dashboard" className="text-french-blue hover:underline text-sm">
+                            ← Exit
+                        </Link>
+                        <span className="text-foreground font-semibold">{mod.title}</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold
+              ${mode === "guided" ? "bg-cool-sky/10 text-cool-sky" : "bg-velvet-purple/10 text-velvet-purple"}`}>
+                            {mode === "guided" ? "🧑‍🏫 Guided" : "🎯 Independent"}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                        <span className="text-gray-500">⏱️ {formatTime(timer)}</span>
+                        <span className="text-gray-500">❌ {errors} errors</span>
+                    </div>
+                </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-              <div className="bg-honeydew rounded-xl p-3 text-center">
-                <p className="text-sm text-gray-500">Time</p>
-                <p className="font-bold text-french-blue">{mod.estimatedTime}</p>
-              </div>
-              <div className="bg-honeydew rounded-xl p-3 text-center">
-                <p className="text-sm text-gray-500">Difficulty</p>
-                <p className="font-bold text-french-blue">{mod.difficulty}</p>
-              </div>
-              <div className="bg-honeydew rounded-xl p-3 text-center">
-                <p className="text-sm text-gray-500">Type</p>
-                <p className="font-bold text-french-blue">Interactive</p>
-              </div>
-              <div className="bg-honeydew rounded-xl p-3 text-center">
-                <p className="text-sm text-gray-500">Rating</p>
-                <p className="font-bold text-french-blue">⭐ {mod.confidenceRating}</p>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <h3 className="font-bold text-french-blue mb-2">Skills You&apos;ll Learn:</h3>
-              <div className="flex flex-wrap gap-2">
-                {mod.skills.map((s) => (
-                  <span key={s} className="bg-honeydew text-french-blue px-4 py-2 rounded-full text-sm font-medium">
-                    ✓ {s}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <h2 className="text-xl font-bold text-french-blue mb-4">Choose Your Mode:</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <button onClick={() => startModule("guided")} className="card text-left hover:border-cool-sky group">
-              <div className="text-4xl mb-3">👋</div>
-              <h3 className="text-xl font-bold text-french-blue group-hover:text-cool-sky mb-2">
-                Guided Mode
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Step-by-step guidance with highlights, hints, and voice narration.
-                Perfect for first-timers.
-              </p>
-              <ul className="text-sm text-gray-500 space-y-1">
-                <li>✅ Highlighted buttons</li>
-                <li>✅ Tooltips & hints</li>
-                <li>✅ Animated hand pointer</li>
-                <li>✅ Voice narration toggle</li>
-                <li>✅ Encouraging feedback</li>
-              </ul>
-            </button>
-
-            <button onClick={() => startModule("independent")} className="card text-left hover:border-cool-sky group">
-              <div className="text-4xl mb-3">💪</div>
-              <h3 className="text-xl font-bold text-french-blue group-hover:text-cool-sky mb-2">
-                Independent Mode
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Realistic simulation without guides. Test your skills in a
-                safe environment.
-              </p>
-              <ul className="text-sm text-gray-500 space-y-1">
-                <li>✅ Realistic interface</li>
-                <li>✅ No highlighting</li>
-                <li>✅ Safe error feedback</li>
-                <li>✅ Optional timer</li>
-                <li>✅ Performance scoring</li>
-              </ul>
-            </button>
-          </div>
+            {SimComponent ? (
+                <SimComponent
+                    mode={mode}
+                    onComplete={handleComplete}
+                    onError={handleError}
+                />
+            ) : (
+                <div className="text-center py-20">
+                    <div className="text-5xl mb-4">🚧</div>
+                    <h2 className="text-2xl font-bold text-foreground mb-2">{mod.title}</h2>
+                    <p className="text-gray-600">Simulation for this module is coming soon!</p>
+                </div>
+            )}
         </div>
-      </div>
     );
-  }
-
-  // Simulation view — renders the appropriate simulation component
-  const isGuided = mode === "guided";
-
-  return (
-    <div className="py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Top bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <Link href="/dashboard" className="btn-secondary text-sm py-2 px-4">
-            ← Back
-          </Link>
-          <div className="flex items-center gap-3">
-            <span className="bg-cool-sky/10 text-cool-sky px-4 py-2 rounded-full text-sm font-semibold">
-              🛡️ Practice Mode
-            </span>
-            {showTimer && (
-              <span className="bg-gray-100 text-gray-700 px-4 py-2 rounded-full text-sm font-mono">
-                ⏱️ {formatTime(timer)}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {mode === "independent" && (
-              <button
-                onClick={() => setShowTimer(!showTimer)}
-                className="text-sm text-gray-500 hover:text-french-blue"
-              >
-                {showTimer ? "Hide Timer" : "Show Timer"}
-              </button>
-            )}
-            <button
-              onClick={() => {
-                setNarrationOn(!narrationOn);
-                if (!narrationOn) speak("Voice narration enabled.");
-              }}
-              className={`text-sm px-3 py-1 rounded-full ${narrationOn ? "bg-cool-sky text-white" : "bg-gray-100 text-gray-600"}`}
-            >
-              🔊 {narrationOn ? "On" : "Off"}
-            </button>
-          </div>
-        </div>
-
-        {/* Module title bar */}
-        <div className="flex items-center gap-3 mb-6">
-          <span className="text-3xl">{mod.icon}</span>
-          <h1 className="text-xl font-bold text-french-blue">{mod.title}</h1>
-          <span className="text-sm bg-honeydew text-french-blue px-3 py-1 rounded-full">
-            {isGuided ? "Guided Mode" : "Independent Mode"}
-          </span>
-        </div>
-
-        {/* Render the simulation component */}
-        {SimComponent ? (
-          <SimComponent
-            isGuided={isGuided}
-            onComplete={handleSimComplete}
-            onSpeak={speak}
-          />
-        ) : (
-          <div className="card text-center py-12">
-            <p className="text-gray-500 text-lg">Simulation for this module is coming soon!</p>
-            <Link href="/dashboard" className="btn-primary mt-4 inline-block">← Back to Modules</Link>
-          </div>
-        )}
-
-        {/* Bottom controls */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mt-6">
-          <div className="flex items-center gap-4 text-sm text-gray-500">
-            <span>Score: {score}</span>
-            <span>Errors: {errors}</span>
-          </div>
-          <button
-            onClick={() => setMode("select")}
-            className="btn-secondary text-sm py-2 px-4"
-          >
-            🔄 Change Mode
-          </button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 export default function ModulePage() {
-  return (
-    <Suspense fallback={
-      <div className="py-20 text-center">
-        <div className="text-4xl mb-4 gentle-pulse">⏳</div>
-        <p className="text-lg text-gray-600">Loading module...</p>
-      </div>
-    }>
-      <ModuleContent />
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-honeydew flex items-center justify-center">
+                <div className="text-center">
+                    <div className="text-4xl mb-4 gentle-pulse">🛡️</div>
+                    <p className="text-lg text-gray-600">Loading module...</p>
+                </div>
+            </div>
+        }>
+            <ModuleContent />
+        </Suspense>
+    );
 }

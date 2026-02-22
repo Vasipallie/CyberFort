@@ -1,353 +1,245 @@
 "use client";
+
 import { useState } from "react";
-import { validateLogin, FAKE_BANK } from "@/lib/credentials";
-import type { FakeUser } from "@/lib/credentials";
+import { FAKE_BANK, FAKE_CREDENTIALS, FAKE_2FA_CODE } from "@/lib/credentials";
 
 interface Props {
-  isGuided: boolean;
-  onComplete: (score: number, errors: number) => void;
-  onSpeak: (text: string) => void;
+    mode: "guided" | "independent";
+    onComplete: (score: number, maxScore: number, errors: number) => void;
+    onError: () => void;
 }
 
-type Step = "landing" | "login" | "dashboard" | "transfer" | "confirm" | "receipt" | "history";
+type Step = "login" | "2fa" | "dashboard" | "transactions" | "transfer" | "transfer-success";
 
-export default function BankingSim({ isGuided, onComplete, onSpeak }: Props) {
-  const [step, setStep] = useState<Step>("landing");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
-  const [loggedInUser, setLoggedInUser] = useState<FakeUser | null>(null);
-  const [score, setScore] = useState(0);
-  const [errors, setErrors] = useState(0);
-  const [showPassword, setShowPassword] = useState(false);
-  // Transfer fields
-  const [recipient, setRecipient] = useState("");
-  const [transferAmount, setTransferAmount] = useState("");
-  const [transferNote, setTransferNote] = useState("");
+export default function BankingSim({ mode, onComplete, onError }: Props) {
+    const [step, setStep] = useState<Step>("login");
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const [code2fa, setCode2fa] = useState("");
+    const [loginError, setLoginError] = useState("");
+    const [transferAmt, setTransferAmt] = useState("");
+    const [transferTo, setTransferTo] = useState("");
+    const [score, setScore] = useState(0);
+    const [errors, setErrors] = useState(0);
+    const isGuided = mode === "guided";
+    const user = FAKE_CREDENTIALS.user;
 
-  const addScore = (pts: number) => setScore(s => s + pts);
-  const addError = () => setErrors(e => e + 1);
+    const handleLogin = () => {
+        if (username === user.username && password === user.password) {
+            setScore((s) => s + 20); setStep("2fa"); setLoginError("");
+        } else { setLoginError("Invalid credentials."); setErrors((e) => e + 1); onError(); }
+    };
 
-  const handleLogin = () => {
-    const user = validateLogin(username, password);
-    if (user) {
-      setLoggedInUser(user);
-      setLoginError("");
-      addScore(20);
-      setStep("dashboard");
-      onSpeak("Welcome to SafeBank! Your account dashboard is now showing.");
-    } else {
-      setLoginError("Invalid credentials. Please try again.");
-      addError();
+    const handle2FA = () => {
+        if (code2fa === FAKE_2FA_CODE) { setScore((s) => s + 20); setStep("dashboard"); }
+        else { setErrors((e) => e + 1); onError(); }
+    };
+
+    // Login
+    if (step === "login") {
+        return (
+            <div className="max-w-lg mx-auto mt-8 p-4">
+                <div className="bg-[#c8102e] text-white p-6 rounded-t-xl">
+                    <div className="flex items-center gap-3">
+                        <span className="text-3xl">🏦</span>
+                        <div>
+                            <h2 className="text-2xl font-bold">DBS digibank</h2>
+                            <p className="text-sm text-red-200">Practice Banking Portal</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="bg-white border-2 border-gray-200 rounded-b-xl p-8">
+                    <h3 className="text-xl font-bold mb-6">Internet Banking Login</h3>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-semibold mb-2">User ID</label>
+                            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#c8102e] focus:outline-none min-h-[48px]" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold mb-2">PIN</label>
+                            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#c8102e] focus:outline-none min-h-[48px]"
+                                onKeyDown={(e) => e.key === "Enter" && handleLogin()} />
+                        </div>
+                        {loginError && <div className="bg-red-50 border-2 border-red-200 rounded-xl p-3 text-sm text-red-700">{loginError}</div>}
+                        <button onClick={handleLogin}
+                            className={`w-full bg-[#c8102e] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#a00d24]
+                ${isGuided ? "ring-4 ring-blue-400 ring-offset-2" : ""}`}>
+                            Log In
+                        </button>
+                    </div>
+                    {isGuided && (
+                        <div className="mt-6 bg-green-50 border-2 border-green-200 rounded-xl p-4 text-sm text-green-800">
+                            💡 <strong>Credentials:</strong> <code>{user.username}</code> / <code>{user.password}</code>
+                        </div>
+                    )}
+                </div>
+                <div className="mt-4 bg-amber-50 border-2 border-amber-200 rounded-xl p-3 text-center">
+                    <span className="text-sm font-bold text-amber-800">⚠️ PRACTICE MODE — Not real DBS banking</span>
+                </div>
+            </div>
+        );
     }
-  };
 
-  const handleTransferSubmit = () => {
-    if (!recipient.trim()) { addError(); return; }
-    const amt = parseFloat(transferAmount);
-    if (isNaN(amt) || amt <= 0 || amt > FAKE_BANK.balance) {
-      addError();
-      return;
+    // 2FA
+    if (step === "2fa") {
+        return (
+            <div className="max-w-lg mx-auto mt-8 p-4">
+                <div className="bg-[#c8102e] text-white p-4 rounded-t-xl"><span className="font-bold">Verify Your Identity</span></div>
+                <div className="bg-white border-2 border-gray-200 rounded-b-xl p-8 text-center">
+                    <div className="text-4xl mb-4">📱</div>
+                    <p className="text-gray-600 mb-6">Enter OTP sent to ****{user.phone.slice(-4)}</p>
+                    <input type="text" value={code2fa} onChange={(e) => setCode2fa(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        maxLength={6} className="w-full px-4 py-4 rounded-xl border-2 border-gray-200 text-2xl text-center tracking-[0.5em] font-mono focus:border-[#c8102e] focus:outline-none"
+                        onKeyDown={(e) => e.key === "Enter" && handle2FA()} />
+                    <button onClick={handle2FA}
+                        className={`w-full mt-6 bg-[#c8102e] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#a00d24]
+              ${isGuided ? "ring-4 ring-blue-400 ring-offset-2" : ""}`}>Verify</button>
+                    {isGuided && (
+                        <div className="mt-4 bg-green-50 border-2 border-green-200 rounded-xl p-3 text-sm text-green-800">
+                            💡 OTP: <code className="text-lg">{FAKE_2FA_CODE}</code>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
     }
-    addScore(15);
-    setStep("confirm");
-    onSpeak("Review your transfer details carefully before confirming.");
-  };
 
-  const handleConfirmTransfer = () => {
-    addScore(15);
-    setStep("receipt");
-    onSpeak("Transfer complete! Always check your receipt. Click Logout when done.");
-  };
+    // Dashboard
+    if (step === "dashboard") {
+        return (
+            <div className="max-w-3xl mx-auto mt-8 p-4">
+                <div className="bg-[#c8102e] text-white p-4 rounded-t-xl flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">🏦</span>
+                        <span className="font-bold">DBS digibank</span>
+                    </div>
+                    <button onClick={() => { setScore((s) => s + 20); onComplete(score + 20, 100, errors); }}
+                        className="bg-white text-[#c8102e] px-4 py-2 rounded-xl text-sm font-semibold">Logout</button>
+                </div>
+                <div className="bg-white border-2 border-gray-200 rounded-b-xl p-6">
+                    <h3 className="text-xl font-bold mb-1">Welcome, {user.fullName.split(" ")[0]}</h3>
+                    <p className="text-sm text-gray-500 mb-6">Account: {FAKE_BANK.accountNumber} • {FAKE_BANK.accountType}</p>
 
-  const handleLogout = () => {
-    addScore(10);
-    onComplete(score + 10, errors);
-  };
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                        <div className="bg-[#c8102e] text-white rounded-xl p-6">
+                            <div className="text-sm text-red-200">Available Balance</div>
+                            <div className="text-3xl font-bold">${FAKE_BANK.availableBalance.toLocaleString()}</div>
+                        </div>
+                        <div className="bg-gray-50 rounded-xl p-6">
+                            <div className="text-sm text-gray-500">Total Balance</div>
+                            <div className="text-3xl font-bold text-foreground">${FAKE_BANK.balance.toLocaleString()}</div>
+                        </div>
+                    </div>
 
-  // ----------- Landing -----------
-  if (step === "landing") {
+                    <div className="flex gap-3 mb-6">
+                        <button onClick={() => { setScore((s) => s + 20); setStep("transactions"); }}
+                            className={`flex-1 bg-gray-50 hover:bg-gray-100 p-4 rounded-xl font-semibold text-sm
+                ${isGuided ? "ring-4 ring-blue-400 ring-offset-2" : ""}`}>
+                            📊 Transactions
+                        </button>
+                        <button onClick={() => { setScore((s) => s + 20); setStep("transfer"); }}
+                            className="flex-1 bg-gray-50 hover:bg-gray-100 p-4 rounded-xl font-semibold text-sm">
+                            💸 Transfer
+                        </button>
+                    </div>
+
+                    {isGuided && (
+                        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+                            📝 <strong>Guided:</strong> Click &quot;Transactions&quot; to view recent activity, or &quot;Transfer&quot; to practise sending money.
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Transactions
+    if (step === "transactions") {
+        return (
+            <div className="max-w-3xl mx-auto mt-8 p-4">
+                <div className="bg-[#c8102e] text-white p-4 rounded-t-xl flex items-center gap-3">
+                    <button onClick={() => setStep("dashboard")} className="bg-white/20 px-3 py-1 rounded-lg text-sm">← Back</button>
+                    <span className="font-bold">Transaction History</span>
+                </div>
+                <div className="bg-white border-2 border-gray-200 rounded-b-xl p-6">
+                    <div className="space-y-2">
+                        {FAKE_BANK.transactions.map((tx, i) => (
+                            <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                                <div>
+                                    <div className="font-medium text-sm">{tx.description}</div>
+                                    <div className="text-xs text-gray-500">{tx.date}</div>
+                                </div>
+                                <div className={`font-bold text-sm ${tx.amount < 0 ? "text-red-600" : "text-green-600"}`}>
+                                    {tx.amount < 0 ? "-" : "+"}${Math.abs(tx.amount).toFixed(2)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={() => onComplete(score, 100, errors)} className="w-full mt-6 btn-primary">
+                        ✅ Complete Module
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // Transfer
+    if (step === "transfer") {
+        return (
+            <div className="max-w-lg mx-auto mt-8 p-4">
+                <div className="bg-[#c8102e] text-white p-4 rounded-t-xl flex items-center gap-3">
+                    <button onClick={() => setStep("dashboard")} className="bg-white/20 px-3 py-1 rounded-lg text-sm">← Back</button>
+                    <span className="font-bold">Fund Transfer</span>
+                </div>
+                <div className="bg-white border-2 border-gray-200 rounded-b-xl p-6">
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-semibold mb-2">Transfer To</label>
+                            <input type="text" value={transferTo} onChange={(e) => setTransferTo(e.target.value)}
+                                placeholder="Recipient name or account"
+                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#c8102e] focus:outline-none min-h-[48px]" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold mb-2">Amount (SGD)</label>
+                            <input type="text" value={transferAmt} onChange={(e) => setTransferAmt(e.target.value.replace(/[^0-9.]/g, ""))}
+                                placeholder="0.00"
+                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#c8102e] focus:outline-none min-h-[48px]" />
+                        </div>
+                        {isGuided && (
+                            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+                                📝 Enter any name and amount. This is just practice — no real money will move!
+                            </div>
+                        )}
+                        <button onClick={() => {
+                            if (!transferTo || !transferAmt) { setErrors((e) => e + 1); onError(); return; }
+                            setScore((s) => s + 20); setStep("transfer-success");
+                        }}
+                            className={`w-full bg-[#c8102e] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#a00d24]
+                ${isGuided ? "ring-4 ring-blue-400 ring-offset-2" : ""}`}>
+                            Transfer →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Transfer Success
     return (
-      <div className="w-full">
-        <div className="bg-gradient-to-b from-[#1a237e] to-[#283593] rounded-t-xl p-6 text-white text-center">
-          <div className="flex items-center justify-center gap-3 mb-1">
-            <span className="text-4xl">🏦</span>
-            <div>
-              <h2 className="text-2xl font-bold">SafeBank Online</h2>
-              <p className="text-indigo-200 text-sm">Practice Internet Banking</p>
+        <div className="max-w-lg mx-auto mt-8 p-4">
+            <div className="bg-white border-2 border-green-200 rounded-xl p-8 text-center">
+                <div className="text-5xl mb-4">✅</div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">Transfer Successful!</h3>
+                <p className="text-gray-600 mb-4">(This is a practice transfer — no real money moved)</p>
+                <div className="bg-green-50 rounded-xl p-4 text-left text-sm space-y-1 mb-6">
+                    <p><strong>To:</strong> {transferTo}</p>
+                    <p><strong>Amount:</strong> ${parseFloat(transferAmt || "0").toFixed(2)}</p>
+                    <p><strong>Ref:</strong> DBS-{Math.floor(Math.random() * 900000 + 100000)}</p>
+                </div>
+                <button onClick={() => onComplete(score, 100, errors)} className="btn-primary">✅ Complete Module</button>
             </div>
-          </div>
-          <div className="bg-yellow-400/20 text-yellow-200 text-xs px-4 py-1.5 rounded-full inline-block mt-2">
-            🛡️ SAFE PRACTICE MODE — No real money is involved
-          </div>
         </div>
-        <div className="bg-white rounded-b-xl p-8 border border-t-0 border-gray-200 text-center">
-          <p className="text-gray-500 mb-6">Learn to use internet banking safely</p>
-          <button
-            onClick={() => { setStep("login"); addScore(10); onSpeak("Enter your practice banking login."); }}
-            className={`btn-primary text-lg px-10 ${isGuided ? "ring-4 ring-cool-sky/40 relative" : ""}`}
-          >
-            {isGuided && <span className="absolute -top-3 -right-3 text-2xl hand-pointer">👆</span>}
-            🔐 Log In to SafeBank
-          </button>
-          {isGuided && (
-            <div className="mt-6 bg-honeydew rounded-xl p-4 text-left text-sm">
-              <p className="font-bold text-french-blue mb-1">📝 Guided Instruction:</p>
-              <p className="text-gray-700">Click the button above to go to the login screen.</p>
-            </div>
-          )}
-        </div>
-      </div>
     );
-  }
-
-  // ----------- Login -----------
-  if (step === "login") {
-    return (
-      <div className="w-full">
-        <div className="bg-[#283593] rounded-t-xl p-4 text-white flex items-center gap-2">
-          <span className="text-xl">🏦</span>
-          <span className="font-bold">SafeBank — Login</span>
-          <span className="text-xs bg-yellow-400/20 text-yellow-200 px-2 py-0.5 rounded-full ml-auto">PRACTICE</span>
-        </div>
-        <div className="bg-white rounded-b-xl p-8 border border-t-0 border-gray-200">
-          <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">Internet Banking Login</h3>
-          {loginError && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4 text-red-700 text-sm">⚠️ {loginError}</div>
-          )}
-          <div className="space-y-4 max-w-md mx-auto">
-            <div>
-              <label htmlFor="bank-user" className="block text-sm font-semibold text-gray-700 mb-1.5">Username</label>
-              <input id="bank-user" type="text" value={username} onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
-                className={`w-full p-4 rounded-xl border-2 text-base min-h-[48px]
-                  ${isGuided && !username ? "border-cool-sky bg-cool-sky/5" : "border-gray-200"} focus:border-french-blue focus:outline-none`}
-              />
-            </div>
-            <div>
-              <label htmlFor="bank-pass" className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
-              <div className="relative">
-                <input id="bank-pass" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className={`w-full p-4 rounded-xl border-2 text-base min-h-[48px] pr-16
-                   ${isGuided && username && !password ? "border-cool-sky bg-cool-sky/5" : "border-gray-200"} focus:border-french-blue focus:outline-none`}
-                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 text-sm font-medium py-1 px-2">
-                  {showPassword ? "🙈 Hide" : "👁️ Show"}
-                </button>
-              </div>
-            </div>
-            <button onClick={handleLogin}
-              className={`w-full btn-primary text-lg ${isGuided && username && password ? "ring-4 ring-cool-sky/40 relative" : ""}`}
-            >
-              {isGuided && username && password && <span className="absolute -top-3 -right-3 text-2xl hand-pointer">👆</span>}
-              Sign In
-            </button>
-          </div>
-          {isGuided && (
-            <div className="mt-6 bg-honeydew rounded-xl p-4 text-sm max-w-md mx-auto">
-              <p className="font-bold text-french-blue mb-2">💡 Practice Credentials:</p>
-              <div className="bg-white rounded-lg p-3 font-mono text-xs">
-                <p><span className="text-gray-500">User →</span> <strong>margaret.chen</strong> / <strong>Safe2026!</strong></p>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  const user = loggedInUser || { fullName: "Margaret Chen" };
-
-  // ----------- Dashboard -----------
-  if (step === "dashboard") {
-    return (
-      <div className="w-full">
-        <div className="bg-[#283593] rounded-t-xl p-4 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2"><span className="text-xl">🏦</span><span className="font-bold">SafeBank</span></div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm">👤 {user.fullName.split(" ")[0]}</span>
-            <button onClick={handleLogout}
-              className={`bg-red-500/80 hover:bg-red-500 text-white text-sm px-4 py-2 rounded-lg min-h-[40px]
-                ${isGuided ? "ring-2 ring-yellow-300" : ""}`}>Logout</button>
-          </div>
-        </div>
-        <div className="bg-gray-50 rounded-b-xl border border-t-0 border-gray-200">
-          {/* Account overview */}
-          <div className="bg-white p-6 border-b">
-            <p className="text-sm text-gray-500">{FAKE_BANK.accountType}</p>
-            <p className="text-xs text-gray-400 font-mono mb-1">{FAKE_BANK.accountNumber}</p>
-            <p className="text-4xl font-bold text-french-blue">${FAKE_BANK.balance.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
-            <p className="text-xs text-gray-400 mt-1">Available Balance</p>
-          </div>
-
-          {/* Quick actions */}
-          <div className="p-6 grid grid-cols-2 gap-4">
-            <button onClick={() => { setStep("transfer"); addScore(10); onSpeak("Fill in a transfer form to send money."); }}
-              className={`p-4 rounded-xl border-2 text-left transition-all min-h-[48px]
-                ${isGuided ? "border-cool-sky bg-cool-sky/5 hover:bg-cool-sky/10 relative" : "border-gray-200 bg-white hover:border-indigo-400"}`}>
-              {isGuided && <span className="absolute -top-2 -right-2 text-xl hand-pointer">👆</span>}
-              <p className="font-bold text-gray-800">💸 Transfer</p>
-              <p className="text-xs text-gray-500">Send money</p>
-            </button>
-            <button onClick={() => { setStep("history"); addScore(10); onSpeak("Here are your recent transactions."); }}
-              className="p-4 rounded-xl border-2 border-gray-200 bg-white text-left hover:border-indigo-400 transition-all min-h-[48px]">
-              <p className="font-bold text-gray-800">📜 History</p>
-              <p className="text-xs text-gray-500">Recent transactions</p>
-            </button>
-          </div>
-
-          {isGuided && (
-            <div className="mx-6 mb-6 bg-honeydew rounded-xl p-4 text-sm">
-              <p className="font-bold text-french-blue mb-1">📝 Guided Instruction:</p>
-              <p className="text-gray-700">Try clicking &quot;Transfer&quot; to practice sending money, or &quot;History&quot; to review transactions. Click &quot;Logout&quot; when done.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ----------- Transfer -----------
-  if (step === "transfer") {
-    return (
-      <div className="w-full">
-        <div className="bg-[#283593] rounded-t-xl p-4 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2"><span className="text-xl">🏦</span><span className="font-bold">Transfer</span></div>
-          <button onClick={handleLogout} className="bg-red-500/80 hover:bg-red-500 text-white text-sm px-4 py-2 rounded-lg">Logout</button>
-        </div>
-        <div className="bg-white rounded-b-xl p-6 border border-t-0 border-gray-200">
-          <button onClick={() => setStep("dashboard")} className="text-cool-sky hover:underline text-sm mb-4 inline-block">← Back to Dashboard</button>
-          <h3 className="text-xl font-bold text-gray-800 mb-4">💸 Fund Transfer</h3>
-          <div className="space-y-4 max-w-md">
-            <div>
-              <label htmlFor="tf-recip" className="block text-sm font-semibold text-gray-700 mb-1.5">Recipient Account</label>
-              <input id="tf-recip" type="text" value={recipient} onChange={(e) => setRecipient(e.target.value)}
-                placeholder="e.g. 1234-5678-9012"
-                className={`w-full p-4 rounded-xl border-2 text-base min-h-[48px]
-                  ${isGuided && !recipient ? "border-cool-sky bg-cool-sky/5" : "border-gray-200"} focus:border-french-blue focus:outline-none`}
-              />
-            </div>
-            <div>
-              <label htmlFor="tf-amt" className="block text-sm font-semibold text-gray-700 mb-1.5">Amount ($)</label>
-              <input id="tf-amt" type="number" value={transferAmount} onChange={(e) => setTransferAmount(e.target.value)}
-                placeholder="e.g. 50.00"
-                className={`w-full p-4 rounded-xl border-2 text-base min-h-[48px]
-                  ${isGuided && recipient && !transferAmount ? "border-cool-sky bg-cool-sky/5" : "border-gray-200"} focus:border-french-blue focus:outline-none`}
-              />
-            </div>
-            <div>
-              <label htmlFor="tf-note" className="block text-sm font-semibold text-gray-700 mb-1.5">Note (optional)</label>
-              <input id="tf-note" type="text" value={transferNote} onChange={(e) => setTransferNote(e.target.value)}
-                placeholder="e.g. Birthday gift"
-                className="w-full p-4 rounded-xl border-2 border-gray-200 text-base min-h-[48px] focus:border-french-blue focus:outline-none"
-              />
-            </div>
-            <button onClick={handleTransferSubmit}
-              className={`w-full btn-primary text-lg ${isGuided && recipient && transferAmount ? "ring-4 ring-cool-sky/40 relative" : ""}`}>
-              {isGuided && recipient && transferAmount && <span className="absolute -top-3 -right-3 text-2xl hand-pointer">👆</span>}
-              Review Transfer
-            </button>
-          </div>
-          {isGuided && (
-            <div className="mt-6 bg-honeydew rounded-xl p-4 text-sm max-w-md">
-              <p className="font-bold text-french-blue mb-1">💡 Try entering:</p>
-              <p className="text-gray-700">Recipient: <strong>1234-5678-9012</strong>, Amount: <strong>50</strong></p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ----------- Confirm -----------
-  if (step === "confirm") {
-    return (
-      <div className="w-full">
-        <div className="bg-[#283593] rounded-t-xl p-4 text-white flex items-center gap-2">
-          <span className="text-xl">🏦</span><span className="font-bold">Confirm Transfer</span>
-        </div>
-        <div className="bg-white rounded-b-xl p-8 border border-t-0 border-gray-200">
-          <h3 className="text-xl font-bold text-gray-800 mb-6 text-center">⚠️ Review Before Confirming</h3>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 max-w-md mx-auto space-y-3">
-            <div className="flex justify-between"><span className="text-gray-500">To:</span><span className="font-bold">{recipient}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Amount:</span><span className="font-bold text-french-blue">${parseFloat(transferAmount).toFixed(2)}</span></div>
-            {transferNote && <div className="flex justify-between"><span className="text-gray-500">Note:</span><span>{transferNote}</span></div>}
-            <div className="flex justify-between"><span className="text-gray-500">From:</span><span>{FAKE_BANK.accountNumber}</span></div>
-          </div>
-          <div className="flex gap-3 max-w-md mx-auto mt-6">
-            <button onClick={() => setStep("transfer")} className="flex-1 btn-secondary py-4 text-lg">← Edit</button>
-            <button onClick={handleConfirmTransfer}
-              className={`flex-1 btn-primary py-4 text-lg ${isGuided ? "ring-4 ring-cool-sky/40 relative" : ""}`}>
-              {isGuided && <span className="absolute -top-3 -right-3 text-2xl hand-pointer">👆</span>}
-              ✅ Confirm
-            </button>
-          </div>
-          {isGuided && (
-            <div className="mt-6 bg-honeydew rounded-xl p-4 text-sm max-w-md mx-auto">
-              <p className="font-bold text-french-blue mb-1">📝 Guided Instruction:</p>
-              <p className="text-gray-700">Always review transfer details carefully. Click &quot;Confirm&quot; when ready, or &quot;Edit&quot; to go back.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // ----------- Receipt -----------
-  if (step === "receipt") {
-    return (
-      <div className="w-full">
-        <div className="bg-[#283593] rounded-t-xl p-4 text-white flex items-center gap-2">
-          <span className="text-xl">🏦</span><span className="font-bold">Transfer Receipt</span>
-        </div>
-        <div className="bg-white rounded-b-xl p-8 border border-t-0 border-gray-200 text-center">
-          <div className="text-6xl mb-3">✅</div>
-          <h3 className="text-2xl font-bold text-green-600 mb-2">Transfer Successful!</h3>
-          <p className="text-gray-500 mb-6">Your practice transfer has been processed</p>
-          <div className="bg-gray-50 rounded-xl p-6 max-w-md mx-auto text-left space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-gray-500">Reference:</span><span className="font-mono font-bold">TXN-{Math.random().toString(36).substr(2, 8).toUpperCase()}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">To:</span><span>{recipient}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Amount:</span><span className="font-bold">${parseFloat(transferAmount).toFixed(2)}</span></div>
-            <div className="flex justify-between"><span className="text-gray-500">Date:</span><span>{new Date().toLocaleDateString()}</span></div>
-          </div>
-          <button onClick={handleLogout}
-            className={`btn-primary mt-6 text-lg px-10 ${isGuided ? "ring-4 ring-cool-sky/40 relative" : ""}`}>
-            {isGuided && <span className="absolute -top-3 -right-3 text-2xl hand-pointer">👆</span>}
-            🚪 Logout & Complete
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ----------- History -----------
-  return (
-    <div className="w-full">
-      <div className="bg-[#283593] rounded-t-xl p-4 text-white flex items-center justify-between">
-        <div className="flex items-center gap-2"><span className="text-xl">🏦</span><span className="font-bold">Transaction History</span></div>
-        <button onClick={handleLogout} className="bg-red-500/80 hover:bg-red-500 text-white text-sm px-4 py-2 rounded-lg">Logout</button>
-      </div>
-      <div className="bg-white rounded-b-xl p-6 border border-t-0 border-gray-200">
-        <button onClick={() => setStep("dashboard")} className="text-cool-sky hover:underline text-sm mb-4 inline-block">← Back to Dashboard</button>
-        <h3 className="text-xl font-bold text-gray-800 mb-4">📜 Recent Transactions</h3>
-        <div className="space-y-3">
-          {FAKE_BANK.recentTransactions.map((txn, i) => (
-            <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-              <div>
-                <p className="font-semibold text-gray-800">{txn.description}</p>
-                <p className="text-xs text-gray-500">{txn.date}</p>
-              </div>
-              <span className={`font-bold ${txn.amount < 0 ? "text-red-600" : "text-green-600"}`}>
-                {txn.amount < 0 ? "-" : "+"}${Math.abs(txn.amount).toFixed(2)}
-              </span>
-            </div>
-          ))}
-        </div>
-        <button onClick={() => onComplete(score, errors)} className="btn-primary mt-6 w-full">✅ Complete Module</button>
-      </div>
-    </div>
-  );
 }

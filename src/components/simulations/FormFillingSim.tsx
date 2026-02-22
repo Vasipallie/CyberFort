@@ -1,332 +1,218 @@
 "use client";
+
 import { useState } from "react";
+import { FAKE_CREDENTIALS } from "@/lib/credentials";
 
 interface Props {
-  isGuided: boolean;
-  onComplete: (score: number, errors: number) => void;
-  onSpeak: (text: string) => void;
+    mode: "guided" | "independent";
+    onComplete: (score: number, maxScore: number, errors: number) => void;
+    onError: () => void;
 }
 
-type Step = "landing" | "form" | "review" | "submitted";
+type Step = "fill" | "review" | "success";
 
-export default function FormFillingSim({ isGuided, onComplete, onSpeak }: Props) {
-  const [step, setStep] = useState<Step>("landing");
-  const [score, setScore] = useState(0);
-  const [errors, setErrors] = useState(0);
+export default function FormFillingSim({ mode, onComplete, onError }: Props) {
+    const [step, setStep] = useState<Step>("fill");
+    const [formData, setFormData] = useState({
+        fullName: "",
+        nric: "",
+        dob: "",
+        phone: "",
+        email: "",
+        address: "",
+        purpose: "",
+        agree: false,
+    });
+    const [score, setScore] = useState(0);
+    const [errors, setErrors] = useState(0);
+    const isGuided = mode === "guided";
+    const user = FAKE_CREDENTIALS.user;
 
-  // Form fields
-  const [fullName, setFullName] = useState("");
-  const [nric, setNric] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [dob, setDob] = useState("");
-  const [gender, setGender] = useState("");
-  const [address, setAddress] = useState("");
-  const [postalCode, setPostalCode] = useState("");
-  const [purpose, setPurpose] = useState("");
-  const [consent, setConsent] = useState(false);
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+    const updateField = (key: string, value: string | boolean) => {
+        setFormData((prev) => ({ ...prev, [key]: value }));
+    };
 
-  const addScore = (pts: number) => setScore(s => s + pts);
+    const validateForm = () => {
+        const required = ["fullName", "nric", "dob", "phone", "email", "address", "purpose"];
+        const missing = required.filter((k) => !formData[k as keyof typeof formData]);
+        if (missing.length > 0 || !formData.agree) {
+            setErrors((e) => e + 1);
+            onError();
+            return false;
+        }
+        return true;
+    };
 
-  const validateForm = (): boolean => {
-    const errs: Record<string, string> = {};
-    if (!fullName.trim()) errs.fullName = "Full name is required";
-    if (!nric.trim()) errs.nric = "NRIC/FIN is required";
-    if (!email.includes("@")) errs.email = "Enter a valid email address";
-    if (phone.replace(/\s/g, "").length < 8) errs.phone = "Phone number must be at least 8 digits";
-    if (!dob) errs.dob = "Date of birth is required";
-    if (!gender) errs.gender = "Select a gender";
-    if (!address.trim()) errs.address = "Address is required";
-    if (postalCode.length < 5) errs.postalCode = "Postal code must be at least 5 digits";
-    if (!purpose) errs.purpose = "Select a purpose";
-    if (!consent) errs.consent = "You must agree to continue";
-    setFormErrors(errs);
-    if (Object.keys(errs).length > 0) {
-      setErrors(e => e + 1);
-      return false;
-    }
-    return true;
-  };
-
-  if (step === "landing") {
-    return (
-      <div className="w-full">
-        <div className="bg-gradient-to-b from-[#2e7d32] to-[#388e3c] rounded-t-xl p-6 text-white text-center">
-          <div className="flex items-center justify-center gap-3 mb-1">
-            <span className="text-4xl">📝</span>
-            <div>
-              <h2 className="text-2xl font-bold">Practice Form</h2>
-              <p className="text-green-200 text-sm">Learn to Fill Online Forms</p>
-            </div>
-          </div>
-          <div className="bg-yellow-400/20 text-yellow-200 text-xs px-4 py-1.5 rounded-full inline-block mt-2">
-            🛡️ SAFE PRACTICE MODE — Your data is not saved
-          </div>
-        </div>
-        <div className="bg-white rounded-b-xl p-8 border border-t-0 border-gray-200 text-center">
-          <p className="text-gray-500 mb-2">Practice filling common government and service forms</p>
-          <p className="text-sm text-gray-400 mb-6">Includes text fields, dropdowns, date pickers, radio buttons &amp; checkboxes</p>
-          <button
-            onClick={() => { setStep("form"); addScore(10); onSpeak("Fill in each field of the practice form. Take your time!"); }}
-            className={`btn-primary text-lg px-10 ${isGuided ? "ring-4 ring-cool-sky/40 relative" : ""}`}
-          >
-            {isGuided && <span className="absolute -top-3 -right-3 text-2xl hand-pointer">👆</span>}
-            📝 Start Practice Form
-          </button>
-          {isGuided && (
-            <div className="mt-6 bg-honeydew rounded-xl p-4 text-left text-sm">
-              <p className="font-bold text-french-blue mb-1">📝 Guided Instruction:</p>
-              <p className="text-gray-700">This form teaches you how to fill different types of fields. Click &quot;Start&quot; to begin.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (step === "form") {
-    const fieldClass = (name: string) =>
-      `w-full p-4 rounded-xl border-2 text-base min-h-[48px] transition-colors focus:outline-none
-       ${formErrors[name] ? "border-red-400 bg-red-50" : "border-gray-200 focus:border-french-blue"}`;
-
-    return (
-      <div className="w-full">
-        <div className="bg-[#388e3c] rounded-t-xl p-4 text-white flex items-center gap-2">
-          <span className="text-xl">📝</span><span className="font-bold">Practice Form — Application</span>
-          <span className="text-xs bg-yellow-400/20 text-yellow-200 px-2 py-0.5 rounded-full ml-auto">PRACTICE</span>
-        </div>
-        <div className="bg-white rounded-b-xl p-6 border border-t-0 border-gray-200">
-          <h3 className="text-xl font-bold text-gray-800 mb-2">Community Centre Programme Registration</h3>
-          <p className="text-sm text-gray-500 mb-6">Please fill in all required fields (<span className="text-red-500">*</span>)</p>
-
-          <div className="space-y-5">
-            {/* Full Name */}
-            <div>
-              <label htmlFor="ff-name" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Full Name <span className="text-red-500">*</span>
-              </label>
-              <input id="ff-name" type="text" value={fullName} onChange={(e) => setFullName(e.target.value)}
-                placeholder="e.g. Margaret Chen"
-                className={`${fieldClass("fullName")} ${isGuided && !fullName ? "!border-cool-sky !bg-cool-sky/5" : ""}`}
-              />
-              {formErrors.fullName && <p className="text-red-500 text-xs mt-1">⚠️ {formErrors.fullName}</p>}
-            </div>
-
-            {/* NRIC */}
-            <div>
-              <label htmlFor="ff-nric" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                NRIC / FIN <span className="text-red-500">*</span>
-              </label>
-              <input id="ff-nric" type="text" value={nric} onChange={(e) => setNric(e.target.value.toUpperCase())}
-                placeholder="e.g. S1234567A"
-                className={fieldClass("nric")}
-              />
-              {formErrors.nric && <p className="text-red-500 text-xs mt-1">⚠️ {formErrors.nric}</p>}
-            </div>
-
-            {/* Email & Phone row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="ff-email" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input id="ff-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                  placeholder="e.g. margaret@email.com"
-                  className={fieldClass("email")}
-                />
-                {formErrors.email && <p className="text-red-500 text-xs mt-1">⚠️ {formErrors.email}</p>}
-              </div>
-              <div>
-                <label htmlFor="ff-phone" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Phone <span className="text-red-500">*</span>
-                </label>
-                <input id="ff-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-                  placeholder="e.g. 9123 4567"
-                  className={fieldClass("phone")}
-                />
-                {formErrors.phone && <p className="text-red-500 text-xs mt-1">⚠️ {formErrors.phone}</p>}
-              </div>
-            </div>
-
-            {/* Date of Birth & Gender */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="ff-dob" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Date of Birth <span className="text-red-500">*</span>
-                </label>
-                <input id="ff-dob" type="date" value={dob} onChange={(e) => setDob(e.target.value)}
-                  className={fieldClass("dob")}
-                />
-                {formErrors.dob && <p className="text-red-500 text-xs mt-1">⚠️ {formErrors.dob}</p>}
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                  Gender <span className="text-red-500">*</span>
-                </label>
-                <div className="flex gap-4 mt-2">
-                  {["Male", "Female", "Other"].map((g) => (
-                    <label key={g} className="flex items-center gap-2 cursor-pointer">
-                      <input type="radio" name="gender" value={g} checked={gender === g}
-                        onChange={(e) => setGender(e.target.value)}
-                        className="w-5 h-5 accent-french-blue"
-                      />
-                      <span className="text-gray-700">{g}</span>
-                    </label>
-                  ))}
+    // Fill Form
+    if (step === "fill") {
+        return (
+            <div className="max-w-2xl mx-auto mt-8 p-4">
+                <div className="bg-[#2c3e50] text-white p-6 rounded-t-xl">
+                    <div className="flex items-center gap-3">
+                        <span className="text-3xl">📝</span>
+                        <div>
+                            <h2 className="text-2xl font-bold">Government Services</h2>
+                            <p className="text-sm text-gray-300">Practice Form Submission</p>
+                        </div>
+                    </div>
                 </div>
-                {formErrors.gender && <p className="text-red-500 text-xs mt-1">⚠️ {formErrors.gender}</p>}
-              </div>
+
+                <div className="bg-white border-2 border-gray-200 rounded-b-xl p-6">
+                    <h3 className="text-xl font-bold text-foreground mb-2">Application Form</h3>
+                    <p className="text-sm text-gray-500 mb-6">Fill in your personal details below</p>
+
+                    {isGuided && (
+                        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6 text-sm text-blue-800">
+                            📝 <strong>Guided:</strong> Fill in each field using the practice information below:<br />
+                            Name: <code>{user.fullName}</code> | NRIC: <code>{user.nric}</code> | DOB: <code>{user.dob}</code><br />
+                            Phone: <code>{user.phone}</code> | Email: <code>{user.email}</code>
+                        </div>
+                    )}
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-semibold mb-2">Full Name (as in NRIC) *</label>
+                            <input type="text" value={formData.fullName} onChange={(e) => updateField("fullName", e.target.value)}
+                                placeholder="e.g. Margaret Chen Siew Lian"
+                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#2c3e50] focus:outline-none min-h-[48px]" />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold mb-2">NRIC Number *</label>
+                                <input type="text" value={formData.nric} onChange={(e) => updateField("nric", e.target.value)}
+                                    placeholder="e.g. S1234567A"
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#2c3e50] focus:outline-none min-h-[48px]" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold mb-2">Date of Birth *</label>
+                                <input type="text" value={formData.dob} onChange={(e) => updateField("dob", e.target.value)}
+                                    placeholder="e.g. 15/03/1954"
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#2c3e50] focus:outline-none min-h-[48px]" />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-semibold mb-2">Phone Number *</label>
+                                <input type="text" value={formData.phone} onChange={(e) => updateField("phone", e.target.value)}
+                                    placeholder="e.g. 9123 4567"
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#2c3e50] focus:outline-none min-h-[48px]" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold mb-2">Email Address *</label>
+                                <input type="email" value={formData.email} onChange={(e) => updateField("email", e.target.value)}
+                                    placeholder="e.g. margaret@email.com"
+                                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#2c3e50] focus:outline-none min-h-[48px]" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold mb-2">Address *</label>
+                            <input type="text" value={formData.address} onChange={(e) => updateField("address", e.target.value)}
+                                placeholder="e.g. Blk 123 Ang Mo Kio Ave 4, #08-456"
+                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#2c3e50] focus:outline-none min-h-[48px]" />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-semibold mb-2">Purpose of Application *</label>
+                            <select value={formData.purpose} onChange={(e) => updateField("purpose", e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 text-lg focus:border-[#2c3e50] focus:outline-none min-h-[48px] bg-white">
+                                <option value="">— Select —</option>
+                                <option value="new">New Application</option>
+                                <option value="renewal">Renewal</option>
+                                <option value="replacement">Replacement</option>
+                                <option value="update">Update of Information</option>
+                            </select>
+                        </div>
+
+                        <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
+                            <input type="checkbox" id="agree" checked={formData.agree}
+                                onChange={(e) => updateField("agree", e.target.checked)}
+                                className="w-6 h-6 mt-0.5 rounded border-2 border-gray-300" />
+                            <label htmlFor="agree" className="text-sm text-gray-700">
+                                I declare that the information provided is true and correct. I understand that this is a practice form
+                                and no real application will be submitted. *
+                            </label>
+                        </div>
+
+                        <button onClick={() => {
+                            if (validateForm()) { setScore((s) => s + 50); setStep("review"); }
+                        }}
+                            className={`w-full bg-[#2c3e50] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#1a252f]
+                ${isGuided ? "ring-4 ring-blue-400 ring-offset-2" : ""}`}>
+                            Review Form →
+                        </button>
+                    </div>
+                </div>
+                <div className="mt-4 bg-amber-50 border-2 border-amber-200 rounded-xl p-3 text-center">
+                    <span className="text-sm font-bold text-amber-800">⚠️ PRACTICE MODE — This form will NOT be submitted</span>
+                </div>
             </div>
+        );
+    }
 
-            {/* Address */}
-            <div>
-              <label htmlFor="ff-addr" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Address <span className="text-red-500">*</span>
-              </label>
-              <textarea id="ff-addr" value={address} onChange={(e) => setAddress(e.target.value)}
-                placeholder="e.g. Block 123, Jurong East Ave 1, #08-456"
-                rows={2}
-                className={fieldClass("address")}
-              />
-              {formErrors.address && <p className="text-red-500 text-xs mt-1">⚠️ {formErrors.address}</p>}
+    // Review
+    if (step === "review") {
+        const fields = [
+            { label: "Full Name", value: formData.fullName },
+            { label: "NRIC", value: formData.nric },
+            { label: "Date of Birth", value: formData.dob },
+            { label: "Phone", value: formData.phone },
+            { label: "Email", value: formData.email },
+            { label: "Address", value: formData.address },
+            { label: "Purpose", value: formData.purpose },
+        ];
+
+        return (
+            <div className="max-w-2xl mx-auto mt-8 p-4">
+                <div className="bg-[#2c3e50] text-white p-4 rounded-t-xl flex items-center gap-3">
+                    <button onClick={() => setStep("fill")} className="bg-white/20 px-3 py-1 rounded-lg text-sm">← Edit</button>
+                    <span className="font-bold">Review Your Form</span>
+                </div>
+                <div className="bg-white border-2 border-gray-200 rounded-b-xl p-6">
+                    <h3 className="text-lg font-bold text-foreground mb-4">Please review before submitting</h3>
+                    <div className="space-y-3 mb-6">
+                        {fields.map((f) => (
+                            <div key={f.label} className="flex justify-between p-3 bg-gray-50 rounded-xl">
+                                <span className="text-sm font-semibold text-gray-600">{f.label}</span>
+                                <span className="text-sm text-foreground">{f.value}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {isGuided && (
+                        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-4 text-sm text-blue-800">
+                            📝 Check all details are correct. If yes, click &quot;Submit Form&quot;. If not, click &quot;← Edit&quot; above.
+                        </div>
+                    )}
+
+                    <button onClick={() => { setScore((s) => s + 50); setStep("success"); }}
+                        className={`w-full bg-[#2c3e50] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#1a252f]
+              ${isGuided ? "ring-4 ring-blue-400 ring-offset-2" : ""}`}>
+                        ✅ Submit Form
+                    </button>
+                </div>
             </div>
+        );
+    }
 
-            {/* Postal Code */}
-            <div className="max-w-xs">
-              <label htmlFor="ff-postal" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Postal Code <span className="text-red-500">*</span>
-              </label>
-              <input id="ff-postal" type="text" value={postalCode} onChange={(e) => setPostalCode(e.target.value)}
-                placeholder="e.g. 640123"
-                className={fieldClass("postalCode")}
-              />
-              {formErrors.postalCode && <p className="text-red-500 text-xs mt-1">⚠️ {formErrors.postalCode}</p>}
-            </div>
-
-            {/* Purpose (dropdown) */}
-            <div>
-              <label htmlFor="ff-purpose" className="block text-sm font-semibold text-gray-700 mb-1.5">
-                Purpose of Registration <span className="text-red-500">*</span>
-              </label>
-              <select id="ff-purpose" value={purpose} onChange={(e) => setPurpose(e.target.value)}
-                className={fieldClass("purpose")}
-              >
-                <option value="">-- Select purpose --</option>
-                <option value="fitness">Fitness & Exercise</option>
-                <option value="arts">Arts & Crafts</option>
-                <option value="tech">Technology Workshop</option>
-                <option value="language">Language Class</option>
-                <option value="social">Social Activities</option>
-              </select>
-              {formErrors.purpose && <p className="text-red-500 text-xs mt-1">⚠️ {formErrors.purpose}</p>}
-            </div>
-
-            {/* Consent checkbox */}
-            <div className="bg-gray-50 rounded-xl p-4">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)}
-                  className="w-5 h-5 mt-0.5 accent-french-blue"
-                />
-                <span className="text-sm text-gray-700">
-                  I confirm that the information above is accurate and I agree to the terms and conditions of the programme. <span className="text-red-500">*</span>
-                </span>
-              </label>
-              {formErrors.consent && <p className="text-red-500 text-xs mt-1 ml-8">⚠️ {formErrors.consent}</p>}
-            </div>
-
-            <button onClick={() => {
-              if (validateForm()) {
-                addScore(30);
-                setStep("review");
-                onSpeak("Great job! Review your form before submitting.");
-              }
-            }}
-              className={`w-full btn-primary text-lg ${isGuided ? "ring-4 ring-cool-sky/40 relative" : ""}`}>
-              {isGuided && <span className="absolute -top-3 -right-3 text-2xl hand-pointer">👆</span>}
-              Review Submission →
-            </button>
-          </div>
-
-          {isGuided && (
-            <div className="mt-6 bg-honeydew rounded-xl p-4 text-sm">
-              <p className="font-bold text-french-blue mb-2">💡 Tips for filling forms:</p>
-              <ul className="list-disc ml-5 text-gray-700 space-y-1">
-                <li>Fill in <strong>every</strong> field marked with a red asterisk (*)</li>
-                <li>Use the <strong>date picker</strong> for date of birth</li>
-                <li>Select a <strong>radio button</strong> for gender</li>
-                <li>Choose from the <strong>dropdown</strong> for purpose</li>
-                <li>Check the <strong>consent checkbox</strong> at the bottom</li>
-              </ul>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (step === "review") {
+    // Success
     return (
-      <div className="w-full">
-        <div className="bg-[#388e3c] rounded-t-xl p-4 text-white flex items-center gap-2">
-          <span className="text-xl">📝</span><span className="font-bold">Review Submission</span>
+        <div className="max-w-lg mx-auto mt-8 p-4">
+            <div className="bg-white border-2 border-green-200 rounded-xl p-8 text-center">
+                <div className="text-5xl mb-4">✅</div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">Form Submitted!</h3>
+                <p className="text-gray-600 mb-4">(Practice only — no real form was submitted)</p>
+                <div className="bg-green-50 rounded-xl p-4 text-left text-sm mb-6">
+                    <p><strong>Reference:</strong> GOV-{Math.floor(Math.random() * 900000 + 100000)}</p>
+                    <p><strong>Applicant:</strong> {formData.fullName}</p>
+                    <p><strong>Status:</strong> Submitted (Practice)</p>
+                </div>
+                <button onClick={() => onComplete(score, 100, errors)} className="btn-primary">
+                    ✅ Complete Module
+                </button>
+            </div>
         </div>
-        <div className="bg-white rounded-b-xl p-6 border border-t-0 border-gray-200">
-          <h3 className="text-xl font-bold text-gray-800 mb-4">📋 Review Your Details</h3>
-          <div className="bg-green-50 border border-green-200 rounded-xl p-6 space-y-3 text-sm">
-            {[
-              ["Full Name", fullName],
-              ["NRIC/FIN", nric],
-              ["Email", email],
-              ["Phone", phone],
-              ["Date of Birth", dob],
-              ["Gender", gender],
-              ["Address", address],
-              ["Postal Code", postalCode],
-              ["Purpose", purpose],
-              ["Consent", consent ? "✅ Yes" : "No"],
-            ].map(([label, value]) => (
-              <div key={label as string} className="flex justify-between border-b border-green-100 pb-2 last:border-0">
-                <span className="text-gray-500">{label}:</span>
-                <span className="font-semibold text-gray-800 text-right max-w-[60%]">{value}</span>
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-3 mt-6">
-            <button onClick={() => setStep("form")} className="flex-1 btn-secondary py-4 text-lg">← Edit</button>
-            <button onClick={() => { addScore(20); setStep("submitted"); onSpeak("Form submitted successfully! Well done."); }}
-              className={`flex-1 btn-primary py-4 text-lg ${isGuided ? "ring-4 ring-cool-sky/40 relative" : ""}`}>
-              {isGuided && <span className="absolute -top-3 -right-3 text-2xl hand-pointer">👆</span>}
-              ✅ Submit
-            </button>
-          </div>
-        </div>
-      </div>
     );
-  }
-
-  // Submitted
-  return (
-    <div className="w-full">
-      <div className="bg-[#388e3c] rounded-t-xl p-4 text-white flex items-center gap-2">
-        <span className="text-xl">📝</span><span className="font-bold">Form Submitted</span>
-      </div>
-      <div className="bg-white rounded-b-xl p-8 border border-t-0 border-gray-200 text-center">
-        <div className="text-6xl mb-3">🎉</div>
-        <h3 className="text-2xl font-bold text-green-600 mb-2">Registration Submitted!</h3>
-        <p className="text-gray-500 mb-6">Your practice form has been submitted</p>
-        <div className="bg-gray-50 rounded-xl p-6 max-w-sm mx-auto text-left space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-gray-500">Reference:</span><span className="font-mono font-bold">REG-{Math.random().toString(36).substr(2, 8).toUpperCase()}</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Name:</span><span>{fullName}</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Programme:</span><span className="capitalize">{purpose}</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Status:</span><span className="text-green-600 font-bold">✅ Received</span></div>
-        </div>
-        <button onClick={() => onComplete(score, errors)}
-          className={`btn-primary mt-6 text-lg px-10 ${isGuided ? "ring-4 ring-cool-sky/40 relative" : ""}`}>
-          {isGuided && <span className="absolute -top-3 -right-3 text-2xl hand-pointer">👆</span>}
-          ✅ Complete Module
-        </button>
-      </div>
-    </div>
-  );
 }
